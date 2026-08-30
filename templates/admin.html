@@ -60,10 +60,9 @@
 
             <div style="text-align: center; margin: 20px 0 15px; color: #64748b; font-size: 13px; font-weight: 700;">— OR EMERGENCY MASTER PIN LOGIN —</div>
 
-            <!-- 🔑 EMERGENCY 6-DIGIT PIN LOGIN FORM -->
             <form method="POST" style="background: rgba(239, 68, 68, 0.08); border: 1px dashed rgba(239, 68, 68, 0.3); padding: 14px; border-radius: 14px;">
                 <label style="color: #fca5a5;">🔑 Emergency 6-Digit Master PIN</label>
-                <input type="password" name="emergency_pin" placeholder="Enter 6-Digit PIN (e.g. 590590)" maxlength="6" required>
+                <input type="password" name="emergency_pin" placeholder="Enter 6-Digit PIN" maxlength="6" required>
                 <button type="submit" class="btn-main" style="background: #ef4444;">Direct Master PIN Login ⚡</button>
             </form>
 
@@ -82,7 +81,6 @@
                 <h3 style="color: #a5b4fc; margin-bottom: 6px;"><i class="fa-solid fa-shield-halved"></i> 🛡️ 2-Factor OTP & PIN Security Control</h3>
                 <p style="font-size: 12px; color: #94a3b8; margin-bottom: 14px;">यूजरनेम, पासवर्ड या 6-Digit PIN बदलने के लिए ईमेल OTP या मौजूदा Master PIN दर्ज करना अनिवार्य है।</p>
 
-                <!-- OTP Request Button -->
                 <form method="POST" action="/admin/dashboard" style="margin-bottom: 15px;">
                     <input type="hidden" name="action" value="send_email_otp">
                     <button type="submit" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 800; border: none; padding: 10px 14px; border-radius: 10px; width: 100%; cursor: pointer; font-size: 13px;">
@@ -107,13 +105,12 @@
                     <label style="color: #38bdf8;">🔑 Enter Email OTP (If Sent):</label>
                     <input type="text" name="otp_code" placeholder="Enter 6-Digit OTP from Email">
 
-                    <label style="color: #fbbf24;">🔐 OR Enter Current 6-Digit Master PIN (Default: 590590):</label>
-                    <input type="password" name="current_pin" placeholder="Current 6-Digit Master PIN" maxlength="6">
+                    <label style="color: #fbbf24;">🔐 OR Enter Current 6-Digit Master PIN:</label>
+                    <input type="password" name="current_pin" placeholder="Enter Current 6-Digit Master PIN" maxlength="6">
 
                     <button type="submit" class="btn-main" style="background: #4f46e5;">Verify & Save Security Details 🚀</button>
                 </form>
 
-                <!-- SMTP Gmail Setup Accordion -->
                 <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 10px;">
                     <details>
                         <summary style="font-size: 12.5px; color: #a5b4fc; cursor: pointer; font-weight: 700;">⚙️ Configure Gmail SMTP App Password (For Live Email Delivery)</summary>
