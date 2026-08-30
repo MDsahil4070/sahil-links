@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Admin Control | Analytics & Dashboard</title>
+    <title>Master Admin Control | Animations & Theme Creator</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -15,13 +15,11 @@
         input[type="text"], input[type="password"], input[type="datetime-local"], textarea, select { width: 100%; padding: 12px; margin-bottom: 16px; background: #0b0f19; border: 1px solid #28324a; color: #fff; border-radius: 12px; font-size: 14px; }
         .file-box { background: #1e293b; border: 2px dashed #6366f1; padding: 14px; border-radius: 12px; margin-bottom: 16px; text-align: center; }
         
-        /* 📈 ANALYTICS CARDS */
         .analytics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
         .stat-card { background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9)); border: 1px solid rgba(99, 102, 241, 0.3); padding: 16px; border-radius: 16px; text-align: center; }
         .stat-number { font-size: 26px; font-weight: 900; color: #38bdf8; margin: 4px 0; }
         .stat-label { font-size: 11.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
 
-        .backup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .btn-backup { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: #0284c7; color: #fff; font-weight: 800; border-radius: 12px; text-decoration: none; font-size: 13px; text-align: center; }
 
         .switch-row {
@@ -116,6 +114,60 @@
                     <label>Admin Password</label>
                     <input type="password" name="new_password" value="{{ data.admin_pass }}" required>
                     <button type="submit" class="btn-main" style="background: #4f46e5;">Update Login Details</button>
+                </form>
+            </div>
+
+            <!-- 🎨 CREATE NEW CUSTOM THEME -->
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); padding: 16px; border-radius: 16px; margin-bottom: 25px;">
+                <h3 style="color: #f59e0b; margin-bottom: 10px;"><i class="fa-solid fa-palette"></i> 🎨 Create Your Own Custom Theme</h3>
+                <form method="POST" action="/admin/dashboard">
+                    <input type="hidden" name="action" value="create_custom_theme">
+                    <label>Theme Name</label>
+                    <input type="text" name="theme_name" placeholder="e.g. Neon Hacker, Royal Purple" required>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label>Background Color</label>
+                            <input type="text" name="theme_bg" value="#050505" placeholder="#050505" required>
+                        </div>
+                        <div>
+                            <label>Card Glass Color</label>
+                            <input type="text" name="theme_card" value="rgba(20,20,30,0.85)" placeholder="rgba(20,20,30,0.85)" required>
+                        </div>
+                        <div>
+                            <label>Top Glow Color</label>
+                            <input type="text" name="theme_glow1" value="#6366f1" placeholder="#6366f1" required>
+                        </div>
+                        <div>
+                            <label>Bottom Glow Color</label>
+                            <input type="text" name="theme_glow2" value="#ef4444" placeholder="#ef4444" required>
+                        </div>
+                    </div>
+                    <label>Border Accent Color</label>
+                    <input type="text" name="theme_border" value="#6366f1" placeholder="#6366f1" required>
+                    <button type="submit" class="btn-main" style="background: #d97706; padding: 10px;">Create & Apply Custom Theme 🌟</button>
+                </form>
+
+                {% if data.custom_themes %}
+                <h4 style="margin: 15px 0 8px; color: #cbd5e1; font-size: 13px;">Manage Your Custom Themes:</h4>
+                {% for ct in data.custom_themes %}
+                <div class="link-item">
+                    <span>{{ ct.name }}</span>
+                    <form method="POST" action="/admin/dashboard" style="margin:0;">
+                        <input type="hidden" name="action" value="delete_custom_theme">
+                        <input type="hidden" name="index" value="{{ loop.index0 }}">
+                        <button type="submit" class="del-btn">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <!-- 📁 UPLOAD CUSTOM CSS FILE -->
+                <hr style="border-color: rgba(245, 158, 11, 0.2); margin: 15px 0;">
+                <h4 style="color: #cbd5e1; font-size: 13px; margin-bottom: 6px;">📁 Or Upload Custom .css Theme File</h4>
+                <form method="POST" action="/admin/dashboard" enctype="multipart/form-data">
+                    <input type="hidden" name="action" value="upload_css_file">
+                    <input type="file" name="css_file" accept=".css" required style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">
+                    <button type="submit" class="btn-main" style="background: #334155; padding: 8px; font-size: 12px;">Upload CSS File</button>
                 </form>
             </div>
 
@@ -222,7 +274,41 @@
             <form method="POST" action="/admin/dashboard" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="update_profile">
 
-                <h3 style="color: #38bdf8;">📝 Profile & About Details</h3>
+                <h3 style="color: #38bdf8;">🎬 Animation & Theme Style</h3>
+
+                <!-- 🎬 12+ ANIMATIONS DROPDOWN -->
+                <label>🎬 Choose Entrance / Floating Animation (Fast & Smooth)</label>
+                <select name="animation_style">
+                    <option value="anim-slide-up" {% if data.animation_style == 'anim-slide-up' %}selected{% endif %}>🚀 Smooth Slide Up (Recommended)</option>
+                    <option value="anim-zoom-pop" {% if data.animation_style == 'anim-zoom-pop' %}selected{% endif %}>💥 Smooth Zoom Pop In</option>
+                    <option value="anim-float-bounce" {% if data.animation_style == 'anim-float-bounce' %}selected{% endif %}>🎈 Floating Wave Hover</option>
+                    <option value="anim-cyber-pulse" {% if data.animation_style == 'anim-cyber-pulse' %}selected{% endif %}>⚡ Cyber Neon Glow Pulse</option>
+                    <option value="anim-flip-3d" {% if data.animation_style == 'anim-flip-3d' %}selected{% endif %}>🔄 3D Perspective Flip</option>
+                    <option value="anim-glow-wave" {% if data.animation_style == 'anim-glow-wave' %}selected{% endif %}>🌈 Rainbow Glow Hue Wave</option>
+                    <option value="anim-swing" {% if data.animation_style == 'anim-swing' %}selected{% endif %}>🎭 Playful Swing Entrance</option>
+                    <option value="anim-rubber" {% if data.animation_style == 'anim-rubber' %}selected{% endif %}>🪀 Elastic Rubber Pop</option>
+                    <option value="anim-jelly" {% if data.animation_style == 'anim-jelly' %}selected{% endif %}>🍮 Jelly Wobble Effect</option>
+                    <option value="anim-flash-neon" {% if data.animation_style == 'anim-flash-neon' %}selected{% endif %}>✨ Flash Neon Flicker</option>
+                    <option value="anim-heartbeat" {% if data.animation_style == 'anim-heartbeat' %}selected{% endif %}>💓 Rhythmic Heartbeat</option>
+                    <option value="anim-none" {% if data.animation_style == 'anim-none' %}selected{% endif %}>🚫 None / No Animation (OFF)</option>
+                </select>
+
+                <!-- 🌟 PRO THEMES (ORIGINAL 5 ON TOP + CUSTOM THEMES) -->
+                <label>🌟 Pro Theme Style</label>
+                <select name="theme">
+                    <!-- Original Top Themes -->
+                    <option value="theme-red" {% if data.theme == 'theme-red' %}selected{% endif %}>🔥 Deep Blood Crimson Red (Top Default)</option>
+                    <option value="theme-midnight" {% if data.theme == 'theme-midnight' %}selected{% endif %}>🌙 Midnight Neon Blue & Red</option>
+                    <option value="theme-gold" {% if data.theme == 'theme-gold' %}selected{% endif %}>👑 Cyberpunk Gold & Amber</option>
+                    <option value="theme-emerald" {% if data.theme == 'theme-emerald' %}selected{% endif %}>💎 Emerald Green & Mint</option>
+                    <option value="theme-sunset" {% if data.theme == 'theme-sunset' %}selected{% endif %}>🔮 Sunset Purple & Magenta</option>
+                    <!-- Custom Added Themes -->
+                    {% for ct in data.custom_themes %}
+                    <option value="{{ ct.id }}" {% if data.theme == ct.id %}selected{% endif %}>{{ ct.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <h3 style="color: #38bdf8; margin-top: 15px;">📝 Profile & About Details</h3>
 
                 <label>📖 About Sahil (Full Story / Bio Vision)</label>
                 <textarea name="about_story" rows="4">{{ data.about_story }}</textarea>
@@ -267,15 +353,6 @@
                     <input type="file" name="avatar_file" accept="image/*" style="margin: 0; background: transparent; border: none;">
                 </div>
 
-                <label>🌟 Pro Theme Style</label>
-                <select name="theme">
-                    <option value="theme-midnight" {% if data.theme == 'theme-midnight' %}selected{% endif %}>🌙 Midnight Neon Blue & Red</option>
-                    <option value="theme-gold" {% if data.theme == 'theme-gold' %}selected{% endif %}>👑 Cyberpunk Gold & Amber</option>
-                    <option value="theme-emerald" {% if data.theme == 'theme-emerald' %}selected{% endif %}>💎 Emerald Green & Mint</option>
-                    <option value="theme-sunset" {% if data.theme == 'theme-sunset' %}selected{% endif %}>🔮 Sunset Purple & Magenta</option>
-                    <option value="theme-red" {% if data.theme == 'theme-red' %}selected{% endif %}>🔥 Deep Blood Crimson Red</option>
-                </select>
-
                 <label>Website Title</label>
                 <input type="text" name="title" value="{{ data.title }}">
 
@@ -290,6 +367,9 @@
 
                 <label>Custom HTML / Ads</label>
                 <textarea name="custom_html" rows="2">{{ data.custom_html }}</textarea>
+
+                <label>Direct Custom CSS Code (Optional)</label>
+                <textarea name="custom_css" rows="3" placeholder="body { ... }">{{ data.custom_css }}</textarea>
 
                 <button type="submit" class="btn-main">💾 Save All Settings</button>
             </form>

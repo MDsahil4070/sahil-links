@@ -20,6 +20,7 @@
             padding: 24px 14px; overflow-x: hidden; transition: background 0.5s ease;
         }
 
+        /* 🎨 DEFAULT PRO THEMES (ON TOP) */
         body.theme-midnight { background-color: #030712; color: #fff; }
         body.theme-midnight .glow-1 { background: radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, transparent 70%); }
         body.theme-midnight .glow-2 { background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%); }
@@ -45,6 +46,14 @@
         body.theme-red .glow-2 { background: radial-gradient(circle, rgba(153, 27, 27, 0.3) 0%, transparent 70%); }
         body.theme-red .glass-container { background: rgba(45, 10, 10, 0.85); border-color: rgba(239, 68, 68, 0.3); }
 
+        /* 🎨 DYNAMIC CUSTOM USER THEMES */
+        {% for ct in data.custom_themes %}
+        body.{{ ct.id }} { background-color: {{ ct.bg }}; color: #fff; }
+        body.{{ ct.id }} .glow-1 { background: radial-gradient(circle, {{ ct.glow1 }} 0%, transparent 70%); }
+        body.{{ ct.id }} .glow-2 { background: radial-gradient(circle, {{ ct.glow2 }} 0%, transparent 70%); }
+        body.{{ ct.id }} .glass-container { background: {{ ct.card }}; border-color: {{ ct.border }}; }
+        {% endfor %}
+
         .glow-1, .glow-2 { position: fixed; width: 380px; height: 380px; filter: blur(70px); z-index: 0; }
         .glow-1 { top: -10%; left: -10%; }
         .glow-2 { bottom: -10%; right: -10%; }
@@ -56,6 +65,50 @@
             backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             border: 1px solid; border-radius: 32px; padding: 28px 18px; text-align: center;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+        }
+
+        /* 🎬 12+ LIGHTWEIGHT 3G/4G/5G ULTRA-SMOOTH ANIMATIONS */
+        .anim-slide-up { animation: animSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        @keyframes animSlideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+
+        .anim-zoom-pop { animation: animZoomPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+        @keyframes animZoomPop { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+
+        .anim-float-bounce { animation: animFloatBounce 3s ease-in-out infinite alternate; }
+        @keyframes animFloatBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
+
+        .anim-cyber-pulse { animation: animCyberPulse 2.5s ease-in-out infinite; }
+        @keyframes animCyberPulse { 0%, 100% { box-shadow: 0 0 20px rgba(99,102,241,0.4); } 50% { box-shadow: 0 0 35px rgba(239,68,68,0.7); } }
+
+        .anim-flip-3d { animation: animFlip3d 0.9s ease-out both; }
+        @keyframes animFlip3d { from { opacity: 0; transform: perspective(600px) rotateX(25deg); } to { opacity: 1; transform: perspective(600px) rotateX(0deg); } }
+
+        .anim-glow-wave { animation: animGlowWave 4s infinite linear; }
+        @keyframes animGlowWave { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+
+        .anim-swing { animation: animSwing 1s ease-in-out both; }
+        @keyframes animSwing { 20% { transform: rotate3d(0, 0, 1, 10deg); } 40% { transform: rotate3d(0, 0, 1, -8deg); } 60% { transform: rotate3d(0, 0, 1, 4deg); } 80% { transform: rotate3d(0, 0, 1, -2deg); } 100% { transform: rotate3d(0, 0, 1, 0deg); } }
+
+        .anim-rubber { animation: animRubber 0.9s both; }
+        @keyframes animRubber { 0% { transform: scale3d(1, 1, 1); } 30% { transform: scale3d(1.15, 0.85, 1); } 40% { transform: scale3d(0.85, 1.15, 1); } 50% { transform: scale3d(1.05, 0.95, 1); } 65% { transform: scale3d(0.98, 1.02, 1); } 100% { transform: scale3d(1, 1, 1); } }
+
+        .anim-jelly { animation: animJelly 0.8s both; }
+        @keyframes animJelly { 0%, 100% { transform: scale(1, 1); } 30% { transform: scale(1.1, 0.9); } 40% { transform: scale(0.9, 1.1); } 50% { transform: scale(1.05, 0.95); } }
+
+        .anim-flash-neon { animation: animFlashNeon 1.5s infinite; }
+        @keyframes animFlashNeon { 0%, 50%, 100% { opacity: 1; } 25%, 75% { opacity: 0.85; } }
+
+        .anim-heartbeat { animation: animHeartbeat 1.8s ease-in-out infinite; }
+        @keyframes animHeartbeat { 0% { transform: scale(1); } 14% { transform: scale(1.03); } 28% { transform: scale(1); } 42% { transform: scale(1.03); } 70% { transform: scale(1); } }
+
+        .anim-none { animation: none !important; }
+
+        /* BUTTON TOUCH RIPPLE & TAP BOUNCE */
+        .link-row, .gear-card, .poll-option-btn, .hot-sub-card, .whatsapp-btn, .fan-btn {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+        }
+        .link-row:active, .gear-card:active, .poll-option-btn:active, .hot-sub-card:active, .whatsapp-btn:active, .fan-btn:active {
+            transform: scale(0.96) !important;
         }
 
         .music-btn {
@@ -169,9 +222,9 @@
             display: flex; align-items: center; justify-content: space-between;
             padding: 13px 16px; border-radius: 16px; text-decoration: none; color: #fff;
             font-weight: 700; font-size: 14.5px; background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08); transition: 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .link-row:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.1); }
+        .link-row:hover { background: rgba(255, 255, 255, 0.1); }
         .icon-box { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
         .youtube .icon-box { background: #ff0000; }
         .facebook .icon-box { background: #1877f2; }
@@ -218,6 +271,12 @@
 
         .share-btn { margin-top: 15px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 20px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 30px; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; }
     </style>
+
+    {% if data.custom_css %}
+    <style>
+        {{ data.custom_css | safe }}
+    </style>
+    {% endif %}
 </head>
 <body class="{{ data.theme }}">
     <div class="glow-1"></div>
@@ -227,7 +286,8 @@
     <canvas id="particles-canvas"></canvas>
     {% endif %}
 
-    <div class="glass-container">
+    <!-- 🌟 ANIMATION CLASS DYNAMICALLY APPLIED HERE -->
+    <div class="glass-container {{ data.animation_style }}">
         {% if data.enable_music and data.music_url %}
         <div class="music-btn" onclick="toggleAudio()" title="Background Music">
             <i class="fa-solid fa-volume-high" id="music-icon"></i>

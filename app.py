@@ -39,6 +39,9 @@ def load_data():
             "about_story": "नमस्ते दोस्तों! 🙏 मैं साहिल हूँ, बिहार से। मेरा लक्ष्य अपने देसी अंदाज, खांटी बिहारी कॉमेडी और रिलेटेबल लाइफ सिचुएशन्स से आप सभी के चेहरे पर मुस्कान लाना है। सपोर्ट करने के लिए दिल से धन्यवाद! ❤️",
             "avatar_url": "/static/uploads/avatar.jpg",
             "theme": "theme-red",
+            "animation_style": "anim-slide-up",
+            "custom_css": "",
+            "custom_themes": [],
             "adsense_client": "",
             "custom_html": "",
             "enable_badge": True,
@@ -116,6 +119,9 @@ def load_data():
         if "total_views" not in data: data["total_views"] = 0
         if "admin_user" not in data: data["admin_user"] = "admin"
         if "admin_pass" not in data: data["admin_pass"] = "SahilPassword@590"
+        if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
+        if "custom_themes" not in data: data["custom_themes"] = []
+        if "custom_css" not in data: data["custom_css"] = ""
         return data
 
 def save_data(data):
@@ -203,7 +209,7 @@ def admin_dashboard():
                         restored_data = json.load(file)
                         save_data(restored_data)
                         data = restored_data
-                        msg_status = "✅ बैकअप फाइल सफलतापूर्वक लोड (Restore) हो गई!"
+                        msg_status = "✅ बैकअप फाइल लोड हो गई!"
                     except Exception:
                         msg_status = "❌ अमान्य JSON फाइल!"
 
@@ -222,6 +228,49 @@ def admin_dashboard():
                 data["admin_pass"] = new_p
                 save_data(data)
                 msg_status = "✅ एडमिन यूजरनेम और पासवर्ड बदल दिया गया!"
+
+        elif action == "create_custom_theme":
+            t_name = request.form.get("theme_name", "").strip()
+            t_bg = request.form.get("theme_bg", "#000000")
+            t_glow1 = request.form.get("theme_glow1", "#ff0055")
+            t_glow2 = request.form.get("theme_glow2", "#00ffff")
+            t_card = request.form.get("theme_card", "rgba(20,20,30,0.85)")
+            t_border = request.form.get("theme_border", "#ff0055")
+            
+            if t_name:
+                slug = "theme-custom-" + re.sub(r'[^a-zA-Z0-9]', '', t_name).lower()
+                if "custom_themes" not in data: data["custom_themes"] = []
+                data["custom_themes"].append({
+                    "id": slug,
+                    "name": "🎨 " + t_name,
+                    "bg": t_bg,
+                    "glow1": t_glow1,
+                    "glow2": t_glow2,
+                    "card": t_card,
+                    "border": t_border
+                })
+                data["theme"] = slug
+                save_data(data)
+                msg_status = f"✅ कस्टम थीम '{t_name}' बन गई और लागू हो गई!"
+
+        elif action == "upload_css_file":
+            if 'css_file' in request.files:
+                f = request.files['css_file']
+                if f and f.filename.endswith('.css'):
+                    content = f.read().decode('utf-8', errors='ignore')
+                    data["custom_css"] = content
+                    save_data(data)
+                    msg_status = "✅ कस्टम CSS फाइल सफलतापूर्वक अपलोड हो गई!"
+
+        elif action == "delete_custom_theme":
+            idx = int(request.form.get("index"))
+            if "custom_themes" in data and 0 <= idx < len(data["custom_themes"]):
+                del_id = data["custom_themes"][idx]["id"]
+                data["custom_themes"].pop(idx)
+                if data.get("theme") == del_id:
+                    data["theme"] = "theme-red"
+                save_data(data)
+                msg_status = "✅ कस्टम थीम हटा दी गई!"
 
         elif action == "move_up":
             idx = int(request.form.get("index"))
@@ -245,6 +294,8 @@ def admin_dashboard():
             data["bio"] = request.form.get("bio")
             data["about_story"] = request.form.get("about_story")
             data["theme"] = request.form.get("theme")
+            data["animation_style"] = request.form.get("animation_style", "anim-slide-up")
+            data["custom_css"] = request.form.get("custom_css", "")
             data["adsense_client"] = request.form.get("adsense_client")
             data["custom_html"] = request.form.get("custom_html")
             data["enable_badge"] = True if request.form.get("enable_badge") == "on" else False
