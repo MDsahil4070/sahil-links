@@ -18,6 +18,13 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 DATA_FILE = os.path.join(BASE_DIR, "data.json")
 
+# 🔒 HARDCODED PERMANENT DUAL TELEGRAM BOTS (Never Lost)
+HARDCODED_TG_BOT_1 = "8631683215:AAFP-21EoOyu3jZFiNfwOCf_oYP4i_"
+HARDCODED_TG_CHAT_1 = "8110628933"
+
+HARDCODED_TG_BOT_2 = "8600885243:AAH1HXMGQrw4dv1kmRApAMQDF"
+HARDCODED_TG_CHAT_2 = "5599192830"
+
 DEFAULT_BLOCKS = [
     {"id": "notice", "name": "📢 Live Announcement Notice", "enabled": True},
     {"id": "milestones", "name": "🏆 Milestones & Achievements", "enabled": True},
@@ -55,10 +62,10 @@ def load_data():
             "admin_user": "admin",
             "admin_pass": "SahilPassword@590",
             "admin_pin": "590590",
-            "tg_bot_token": "",
-            "tg_chat_id": "",
-            "tg_bot_token_2": "",
-            "tg_chat_id_2": "",
+            "tg_bot_token": HARDCODED_TG_BOT_1,
+            "tg_chat_id": HARDCODED_TG_CHAT_1,
+            "tg_bot_token_2": HARDCODED_TG_BOT_2,
+            "tg_chat_id_2": HARDCODED_TG_CHAT_2,
             "total_views": 0,
             "views_history": [],
             "clicks_history": [],
@@ -134,7 +141,12 @@ def load_data():
         except Exception:
             data = {}
 
-    # Strict state preservation for blocks (never reset user's OFF state)
+    # Lock bots permanently if missing
+    if not data.get("tg_bot_token"): data["tg_bot_token"] = HARDCODED_TG_BOT_1
+    if not data.get("tg_chat_id"): data["tg_chat_id"] = HARDCODED_TG_CHAT_1
+    if not data.get("tg_bot_token_2"): data["tg_bot_token_2"] = HARDCODED_TG_BOT_2
+    if not data.get("tg_chat_id_2"): data["tg_chat_id_2"] = HARDCODED_TG_CHAT_2
+
     if "blocks" not in data or not isinstance(data["blocks"], list):
         data["blocks"] = DEFAULT_BLOCKS
     else:
@@ -198,8 +210,11 @@ def calculate_stats(history_list):
     }
 
 def send_single_tg_message(token, chat_id, otp_code, bot_name="Telegram Bot"):
+    token = token or (HARDCODED_TG_BOT_1 if "1" in bot_name else HARDCODED_TG_BOT_2)
+    chat_id = chat_id or (HARDCODED_TG_CHAT_1 if "1" in bot_name else HARDCODED_TG_CHAT_2)
+
     if not token or not chat_id:
-        return False, f"⚠️ {bot_name} Token या Chat ID सेट नहीं है!"
+        return False, f"⚠️ {bot_name} Config Missing"
     
     msg_text = f"🛡️ *Sahil.com 590 Security Alert*\n\n🔑 Your Security OTP: `{otp_code}`\n\n⏱️ यह कोड 10 मिनट के लिए मान्य है。\n🤖 Delivered via: {bot_name}"
     url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -214,17 +229,17 @@ def send_single_tg_message(token, chat_id, otp_code, bot_name="Telegram Bot"):
         with urllib.request.urlopen(req, timeout=8) as response:
             res = json.loads(response.read().decode('utf-8'))
             if res.get("ok"):
-                return True, f"⚡ OTP {bot_name} पर सफलतापूर्वक भेज दिया गया है!"
+                return True, f"⚡ OTP {bot_name} पर भेज दिया गया है!"
             else:
                 return False, f"⚠️ {bot_name} Error: {res.get('description')}"
     except Exception as e:
-        return False, f"⚠️ {bot_name} Network Error: {str(e)}"
+        return False, f"⚠️ {bot_name} Error: {str(e)}"
 
 def send_telegram_otp(otp_code, data, bot_choice="auto"):
-    token1 = data.get("tg_bot_token", "").strip()
-    chat1 = data.get("tg_chat_id", "").strip()
-    token2 = data.get("tg_bot_token_2", "").strip()
-    chat2 = data.get("tg_chat_id_2", "").strip()
+    token1 = data.get("tg_bot_token") or HARDCODED_TG_BOT_1
+    chat1 = data.get("tg_chat_id") or HARDCODED_TG_CHAT_1
+    token2 = data.get("tg_bot_token_2") or HARDCODED_TG_BOT_2
+    chat2 = data.get("tg_chat_id_2") or HARDCODED_TG_CHAT_2
     
     if bot_choice == "bot1":
         return send_single_tg_message(token1, chat1, otp_code, "Primary Bot 1")
@@ -368,7 +383,6 @@ def admin_dashboard():
     if request.method == "POST":
         action = request.form.get("action")
 
-        # 🔄 BLOCK TOGGLE & REORDER (PERMANENT SAVE)
         if action == "toggle_block":
             idx = int(request.form.get("index"))
             if 0 <= idx < len(data["blocks"]):
