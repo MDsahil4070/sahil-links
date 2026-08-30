@@ -12,8 +12,6 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "SahilPassword@590"
 DATA_FILE = os.path.join(BASE_DIR, "data.json")
 
 def extract_video_id(url):
@@ -32,6 +30,8 @@ def extract_video_id(url):
 def load_data():
     if not os.path.exists(DATA_FILE):
         default_data = {
+            "admin_user": "admin",
+            "admin_pass": "SahilPassword@590",
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
             "bio": "🎬 Content Creator & Comedy Skits\n🔥 Connect with me on all official handles!",
@@ -59,8 +59,7 @@ def load_data():
                 {"title": "Top Bihar Creator", "desc": "Desi Comedy", "icon": "fa-solid fa-crown"}
             ],
             "gallery": [
-                {"title": "Shooting BTS 🎬", "url": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&auto=format&fit=crop&q=60"},
-                {"title": "On Location Set 🎥", "url": "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=600&auto=format&fit=crop&q=60"}
+                {"title": "Shooting BTS 🎬", "url": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&auto=format&fit=crop&q=60"}
             ],
             "poll": {
                 "question": "मेरी अगली कॉमेडी वीडियो किस टॉपिक पर देखना चाहते हैं? 🤔",
@@ -113,21 +112,8 @@ def load_data():
         return default_data
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
-        if "milestones" not in data:
-            data["milestones"] = [
-                {"title": "100K+ Community", "desc": "Fast Growing", "icon": "fa-solid fa-users"},
-                {"title": "10M+ Video Views", "desc": "Viral Skits", "icon": "fa-solid fa-fire"},
-                {"title": "Top Bihar Creator", "desc": "Desi Comedy", "icon": "fa-solid fa-crown"}
-            ]
-        if "gallery" not in data:
-            data["gallery"] = [
-                {"title": "Shooting BTS 🎬", "url": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&auto=format&fit=crop&q=60"}
-            ]
-        block_ids = [b["id"] for b in data.get("blocks", [])]
-        if "milestones" not in block_ids:
-            data["blocks"].insert(1, {"id": "milestones", "name": "🏆 Milestones & Achievements", "enabled": True})
-        if "gallery" not in block_ids:
-            data["blocks"].insert(3, {"id": "gallery", "name": "📸 Photo Gallery & BTS Shots", "enabled": True})
+        if "admin_user" not in data: data["admin_user"] = "admin"
+        if "admin_pass" not in data: data["admin_pass"] = "SahilPassword@590"
         return data
 
 def save_data(data):
@@ -180,7 +166,7 @@ def admin():
     if request.method == "POST":
         user = request.form.get("username")
         pwd = request.form.get("password")
-        if user == ADMIN_USERNAME and pwd == ADMIN_PASSWORD:
+        if user == data.get("admin_user", "admin") and pwd == data.get("admin_pass", "SahilPassword@590"):
             session["logged_in"] = True
             return redirect(url_for("admin_dashboard"))
         else:
@@ -191,10 +177,21 @@ def admin():
 def admin_dashboard():
     if not session.get("logged_in"): return redirect(url_for("admin"))
     data = load_data()
+    msg_status = None
+    
     if request.method == "POST":
         action = request.form.get("action")
         
-        if action == "move_up":
+        if action == "change_credentials":
+            new_u = request.form.get("new_username", "").strip()
+            new_p = request.form.get("new_password", "").strip()
+            if new_u and new_p:
+                data["admin_user"] = new_u
+                data["admin_pass"] = new_p
+                save_data(data)
+                msg_status = "✅ एडमिन यूजरनेम और पासवर्ड सफलतापूर्वक बदल दिया गया!"
+
+        elif action == "move_up":
             idx = int(request.form.get("index"))
             if idx > 0:
                 data["blocks"][idx], data["blocks"][idx-1] = data["blocks"][idx-1], data["blocks"][idx]
@@ -242,11 +239,8 @@ def admin_dashboard():
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     data["avatar_url"] = f"/static/uploads/{filename}"
             
-            custom_url = request.form.get("avatar_url")
-            if custom_url and ('avatar_file' not in request.files or request.files['avatar_file'].filename == ''):
-                data["avatar_url"] = custom_url
-                
             save_data(data)
+            msg_status = "✅ सेटिंग्स सुरक्षित हो गईं!"
 
         elif action == "add_milestone":
             m_title = request.form.get("m_title")
@@ -364,7 +358,7 @@ def admin_dashboard():
             data["messages"] = []
             save_data(data)
 
-        return redirect(url_for("admin_dashboard"))
+        return render_template("admin.html", logged_in=True, data=data, msg_status=msg_status)
 
     return render_template("admin.html", logged_in=True, data=data)
 
