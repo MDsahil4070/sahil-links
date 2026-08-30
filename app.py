@@ -143,7 +143,7 @@ def send_single_tg_message(token, chat_id, otp_code, bot_name="Telegram Bot"):
     if not token or not chat_id:
         return False, f"⚠️ {bot_name} Token या Chat ID सेट नहीं है!"
     
-    msg_text = f"🛡️ *Sahil.com 590 Security Alert*\n\n🔑 Your Security OTP: `{otp_code}`\n\n⏱️ यह कोड 10 मिनट के लिए मान्य है।\n🤖 Delivered via: {bot_name}"
+    msg_text = f"🛡️ *Sahil.com 590 Security Alert*\n\n🔑 Your Security OTP: `{otp_code}`\n\n⏱️ यह कोड 10 मिनट के लिए मान्य है。\n🤖 Delivered via: {bot_name}"
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = urllib.parse.urlencode({
         "chat_id": chat_id,
@@ -172,7 +172,7 @@ def send_telegram_otp(otp_code, data, bot_choice="auto"):
         return send_single_tg_message(token1, chat1, otp_code, "Primary Bot 1")
     elif bot_choice == "bot2":
         return send_single_tg_message(token2, chat2, otp_code, "Backup Bot 2")
-    else: # auto / both
+    else:
         success1, msg1 = send_single_tg_message(token1, chat1, otp_code, "Primary Bot 1")
         success2, msg2 = send_single_tg_message(token2, chat2, otp_code, "Backup Bot 2")
         
@@ -183,7 +183,7 @@ def send_telegram_otp(otp_code, data, bot_choice="auto"):
         elif success2:
             return True, "⚡ OTP Telegram Backup Bot 2 पर भेज दिया गया है!"
         else:
-            return False, f"⚠️ {msg1} | {msg2} (कृपया नीचे बॉट टोकन सेट करें या Master PIN का उपयोग करें)"
+            return False, f"⚠️ {msg1} | {msg2}"
 
 @app.route("/")
 def home():
@@ -264,7 +264,6 @@ def reset_password_otp():
     
     saved_otp = session.get("admin_security_otp")
     
-    # 100% Reset via Telegram OTP (No old master PIN needed at all!)
     if saved_otp and entered_otp == saved_otp:
         if new_user: data["admin_user"] = new_user
         if new_pass: data["admin_pass"] = new_pass
@@ -293,7 +292,88 @@ def admin_dashboard():
     if request.method == "POST":
         action = request.form.get("action")
 
-        if action == "update_security_credentials":
+        # ✏️ EDIT HANDLERS
+        if action == "edit_link":
+            idx = int(request.form.get("index"))
+            if 0 <= idx < len(data["links"]):
+                name = request.form.get("name")
+                url = request.form.get("url")
+                ltype = request.form.get("type", "other")
+                highlight = request.form.get("highlight", "").strip()
+                icon = "fa-solid fa-link"
+                if "youtube" in ltype: icon = "fa-brands fa-youtube"
+                elif "facebook" in ltype: icon = "fa-brands fa-facebook-f"
+                elif "telegram" in ltype: icon = "fa-brands fa-telegram"
+                elif "instagram" in ltype: icon = "fa-brands fa-instagram"
+                elif "moj" in ltype: icon = "fa-solid fa-video"
+                data["links"][idx] = {
+                    "name": name, "url": url, "type": ltype,
+                    "icon": icon, "clicks": data["links"][idx].get("clicks", 0),
+                    "highlight": highlight
+                }
+                save_data(data)
+                msg_status = f"✅ लिंक '{name}' सफलतापूर्वक अपडेट हो गया!"
+
+        elif action == "edit_gear":
+            idx = int(request.form.get("index"))
+            if "gears" in data and 0 <= idx < len(data["gears"]):
+                data["gears"][idx] = {
+                    "name": request.form.get("gear_name"),
+                    "tag": request.form.get("gear_tag"),
+                    "url": request.form.get("gear_url"),
+                    "icon": request.form.get("gear_icon", "fa-solid fa-bag-shopping")
+                }
+                save_data(data)
+                msg_status = "✅ Gear आइटम अपडेट हो गया!"
+
+        elif action == "edit_milestone":
+            idx = int(request.form.get("index"))
+            if "milestones" in data and 0 <= idx < len(data["milestones"]):
+                data["milestones"][idx] = {
+                    "title": request.form.get("m_title"),
+                    "desc": request.form.get("m_desc"),
+                    "icon": request.form.get("m_icon", "fa-solid fa-award")
+                }
+                save_data(data)
+                msg_status = "✅ माइलस्टोन अपडेट हो गया!"
+
+        elif action == "edit_faq":
+            idx = int(request.form.get("index"))
+            if "faqs" in data and 0 <= idx < len(data["faqs"]):
+                data["faqs"][idx] = {
+                    "q": request.form.get("faq_q"),
+                    "a": request.form.get("faq_a")
+                }
+                save_data(data)
+                msg_status = "✅ FAQ अपडेट हो गया!"
+
+        elif action == "edit_review":
+            idx = int(request.form.get("index"))
+            if "reviews" in data and 0 <= idx < len(data["reviews"]):
+                data["reviews"][idx] = {
+                    "name": request.form.get("rev_name"),
+                    "rating": request.form.get("rev_star", "⭐⭐⭐⭐⭐"),
+                    "text": request.form.get("rev_text")
+                }
+                save_data(data)
+                msg_status = "✅ रिव्यू अपडेट हो गया!"
+
+        elif action == "edit_gallery_photo":
+            idx = int(request.form.get("index"))
+            if "gallery" in data and 0 <= idx < len(data["gallery"]):
+                g_title = request.form.get("g_title")
+                photo_url = request.form.get("photo_url", "").strip() or data["gallery"][idx]["url"]
+                if 'photo_file' in request.files:
+                    file = request.files['photo_file']
+                    if file and file.filename != '':
+                        fname = secure_filename(file.filename)
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                        photo_url = f"/static/uploads/{fname}"
+                data["gallery"][idx] = {"title": g_title, "url": photo_url}
+                save_data(data)
+                msg_status = "✅ गैलरी फोटो अपडेट हो गई!"
+
+        elif action == "update_security_credentials":
             new_u = request.form.get("new_username", "").strip()
             new_p = request.form.get("new_password", "").strip()
             new_pin = request.form.get("new_pin", "").strip()
@@ -316,14 +396,6 @@ def admin_dashboard():
                 msg_status = f"✅ {method_used} सत्यापन सफल! यूजरनेम, पासवर्ड और PIN अपडेट हो गए!"
             else:
                 msg_status = "❌ गलत Telegram OTP कोड या गलत Master PIN!"
-
-        elif action == "update_tg_settings":
-            data["tg_bot_token"] = request.form.get("tg_bot_token", "").strip()
-            data["tg_chat_id"] = request.form.get("tg_chat_id", "").strip()
-            data["tg_bot_token_2"] = request.form.get("tg_bot_token_2", "").strip()
-            data["tg_chat_id_2"] = request.form.get("tg_chat_id_2", "").strip()
-            save_data(data)
-            msg_status = "✅ दोनों Telegram Bots सेटिंग्स सुरक्षित हो गईं!"
 
         elif action == "restore_backup":
             if 'backup_file' in request.files:
@@ -356,13 +428,8 @@ def admin_dashboard():
                 slug = "theme-custom-" + re.sub(r'[^a-zA-Z0-9]', '', t_name).lower()
                 if "custom_themes" not in data: data["custom_themes"] = []
                 data["custom_themes"].append({
-                    "id": slug,
-                    "name": "🎨 " + t_name,
-                    "bg": t_bg,
-                    "glow1": t_glow1,
-                    "glow2": t_glow2,
-                    "card": t_card,
-                    "border": t_border
+                    "id": slug, "name": "🎨 " + t_name, "bg": t_bg,
+                    "glow1": t_glow1, "glow2": t_glow2, "card": t_card, "border": t_border
                 })
                 data["theme"] = slug
                 save_data(data)
@@ -382,8 +449,7 @@ def admin_dashboard():
             if "custom_themes" in data and 0 <= idx < len(data["custom_themes"]):
                 del_id = data["custom_themes"][idx]["id"]
                 data["custom_themes"].pop(idx)
-                if data.get("theme") == del_id:
-                    data["theme"] = "theme-red"
+                if data.get("theme") == del_id: data["theme"] = "theme-red"
                 save_data(data)
                 msg_status = "✅ कस्टम थीम हटा दी गई!"
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Admin Control | Dual Telegram Bot & PIN Security</title>
+    <title>Master Admin Control | Edit & Security</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -38,10 +38,13 @@
         .btn-toggle-off { background: #64748b; border: none; color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 800; }
 
         button.btn-main { width: 100%; padding: 14px; background: #6366f1; color: #fff; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; font-size: 15px; }
-        .del-btn { background: #ef4444; padding: 8px 14px; font-size: 12px; border: none; border-radius: 8px; color: #fff; }
-        .link-item { display: flex; justify-content: space-between; align-items: center; background: #0b0f19; padding: 12px 16px; border-radius: 12px; margin-bottom: 10px; }
+        .del-btn { background: #ef4444; padding: 6px 12px; font-size: 12px; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-weight: 700; }
+        .edit-btn { background: #f59e0b; padding: 6px 12px; font-size: 12px; border: none; border-radius: 8px; color: #000; cursor: pointer; font-weight: 800; margin-right: 4px; }
+        .link-item { background: #0b0f19; padding: 14px 16px; border-radius: 14px; margin-bottom: 12px; border: 1px solid #1e293b; }
         .msg-card { background: #0b0f19; border: 1px solid #28324a; padding: 12px; border-radius: 12px; margin-bottom: 8px; font-size: 13px; }
         .alert-box { background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #a7f3d0; padding: 12px; border-radius: 12px; margin-bottom: 16px; font-weight: 700; text-align: center; }
+        
+        .edit-collapse { margin-top: 10px; padding: 12px; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 12px; display: none; }
     </style>
 </head>
 <body>
@@ -227,7 +230,7 @@
                 {% if data.custom_themes %}
                 <h4 style="margin: 15px 0 8px; color: #cbd5e1; font-size: 13px;">Manage Your Custom Themes:</h4>
                 {% for ct in data.custom_themes %}
-                <div class="link-item">
+                <div class="link-item" style="display:flex; justify-content:space-between; align-items:center;">
                     <span>{{ ct.name }}</span>
                     <form method="POST" action="/admin/dashboard" style="margin:0;">
                         <input type="hidden" name="action" value="delete_custom_theme">
@@ -280,20 +283,45 @@
 
             <hr style="border-color: #28324a; margin: 25px 0;">
 
-            <!-- 🏆 MILESTONES MANAGEMENT -->
+            <!-- 🏆 MILESTONES MANAGEMENT (WITH EDIT) -->
             <h3 style="color: #fbbf24;">🏆 Milestone Badges</h3>
             {% if data.milestones %}
                 {% for m in data.milestones %}
                 <div class="link-item">
-                    <div>
-                        <strong><i class="{{ m.icon }}"></i> {{ m.title }}</strong><br>
-                        <small style="color: #94a3b8;">{{ m.desc }}</small>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong><i class="{{ m.icon }}"></i> {{ m.title }}</strong><br>
+                            <small style="color: #94a3b8;">{{ m.desc }}</small>
+                        </div>
+                        <div style="display:flex;">
+                            <button type="button" class="edit-btn" onclick="toggleEdit('m-edit-{{ loop.index0 }}')">✏️ Edit</button>
+                            <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                                <input type="hidden" name="action" value="delete_milestone">
+                                <input type="hidden" name="index" value="{{ loop.index0 }}">
+                                <button type="submit" class="del-btn">Delete</button>
+                            </form>
+                        </div>
                     </div>
-                    <form method="POST" action="/admin/dashboard" style="margin: 0;">
-                        <input type="hidden" name="action" value="delete_milestone">
-                        <input type="hidden" name="index" value="{{ loop.index0 }}">
-                        <button type="submit" class="del-btn">Delete</button>
-                    </form>
+                    <!-- Inline Edit Form -->
+                    <div id="m-edit-{{ loop.index0 }}" class="edit-collapse">
+                        <form method="POST" action="/admin/dashboard" style="margin:0;">
+                            <input type="hidden" name="action" value="edit_milestone">
+                            <input type="hidden" name="index" value="{{ loop.index0 }}">
+                            <label style="font-size:11.5px;">Title</label>
+                            <input type="text" name="m_title" value="{{ m.title }}" required>
+                            <label style="font-size:11.5px;">Description</label>
+                            <input type="text" name="m_desc" value="{{ m.desc }}" required>
+                            <label style="font-size:11.5px;">Icon</label>
+                            <select name="m_icon">
+                                <option value="fa-solid fa-crown" {% if m.icon == 'fa-solid fa-crown' %}selected{% endif %}>👑 Crown</option>
+                                <option value="fa-solid fa-users" {% if m.icon == 'fa-solid fa-users' %}selected{% endif %}>👥 Community</option>
+                                <option value="fa-solid fa-fire" {% if m.icon == 'fa-solid fa-fire' %}selected{% endif %}>🔥 Viral</option>
+                                <option value="fa-solid fa-award" {% if m.icon == 'fa-solid fa-award' %}selected{% endif %}>🎖️ Award</option>
+                                <option value="fa-solid fa-play" {% if m.icon == 'fa-solid fa-play' %}selected{% endif %}>▶️ Play</option>
+                            </select>
+                            <button type="submit" class="btn-main" style="background:#f59e0b; color:#000; padding:8px; font-size:12px;">Save Changes 💾</button>
+                        </form>
+                    </div>
                 </div>
                 {% endfor %}
             {% endif %}
@@ -315,20 +343,40 @@
 
             <hr style="border-color: #28324a; margin: 25px 0;">
 
-            <!-- 📸 PHOTO GALLERY -->
+            <!-- 📸 PHOTO GALLERY (WITH EDIT) -->
             <h3 style="color: #38bdf8;">📸 Photo Gallery & BTS Shots</h3>
             {% if data.gallery %}
                 {% for g in data.gallery %}
                 <div class="link-item">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="{{ g.url }}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
-                        <strong>{{ g.title }}</strong>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="{{ g.url }}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
+                            <strong>{{ g.title }}</strong>
+                        </div>
+                        <div style="display:flex;">
+                            <button type="button" class="edit-btn" onclick="toggleEdit('g-edit-{{ loop.index0 }}')">✏️ Edit</button>
+                            <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                                <input type="hidden" name="action" value="delete_gallery_photo">
+                                <input type="hidden" name="index" value="{{ loop.index0 }}">
+                                <button type="submit" class="del-btn">Delete</button>
+                            </form>
+                        </div>
                     </div>
-                    <form method="POST" action="/admin/dashboard" style="margin: 0;">
-                        <input type="hidden" name="action" value="delete_gallery_photo">
-                        <input type="hidden" name="index" value="{{ loop.index0 }}">
-                        <button type="submit" class="del-btn">Delete</button>
-                    </form>
+                    <!-- Inline Edit Form -->
+                    <div id="g-edit-{{ loop.index0 }}" class="edit-collapse">
+                        <form method="POST" action="/admin/dashboard" enctype="multipart/form-data" style="margin:0;">
+                            <input type="hidden" name="action" value="edit_gallery_photo">
+                            <input type="hidden" name="index" value="{{ loop.index0 }}">
+                            <label style="font-size:11.5px;">Caption</label>
+                            <input type="text" name="g_title" value="{{ g.title }}" required>
+                            <label style="font-size:11.5px;">Image URL</label>
+                            <input type="text" name="photo_url" value="{{ g.url }}">
+                            <div class="file-box" style="padding:8px;">
+                                <input type="file" name="photo_file" accept="image/*">
+                            </div>
+                            <button type="submit" class="btn-main" style="background:#0284c7; padding:8px; font-size:12px;">Save Photo Changes 💾</button>
+                        </form>
+                    </div>
                 </div>
                 {% endfor %}
             {% endif %}
@@ -448,20 +496,42 @@
 
             <hr style="border-color: #28324a; margin: 25px 0;">
 
-            <!-- ⭐ FAN REVIEWS MANAGEMENT -->
+            <!-- ⭐ FAN REVIEWS MANAGEMENT (WITH EDIT) -->
             <h3 style="color: #fbbf24;">⭐ Fan Reviews & Testimonials</h3>
             {% if data.reviews %}
                 {% for r in data.reviews %}
                 <div class="link-item">
-                    <div>
-                        <strong>{{ r.name }}</strong> ({{ r.rating }})<br>
-                        <small style="color: #94a3b8;">"{{ r.text }}"</small>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong>{{ r.name }}</strong> ({{ r.rating }})<br>
+                            <small style="color: #94a3b8;">"{{ r.text }}"</small>
+                        </div>
+                        <div style="display:flex;">
+                            <button type="button" class="edit-btn" onclick="toggleEdit('rev-edit-{{ loop.index0 }}')">✏️ Edit</button>
+                            <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                                <input type="hidden" name="action" value="delete_review">
+                                <input type="hidden" name="index" value="{{ loop.index0 }}">
+                                <button type="submit" class="del-btn">Delete</button>
+                            </form>
+                        </div>
                     </div>
-                    <form method="POST" action="/admin/dashboard" style="margin: 0;">
-                        <input type="hidden" name="action" value="delete_review">
-                        <input type="hidden" name="index" value="{{ loop.index0 }}">
-                        <button type="submit" class="del-btn">Delete</button>
-                    </form>
+                    <!-- Inline Edit Form -->
+                    <div id="rev-edit-{{ loop.index0 }}" class="edit-collapse">
+                        <form method="POST" action="/admin/dashboard" style="margin:0;">
+                            <input type="hidden" name="action" value="edit_review">
+                            <input type="hidden" name="index" value="{{ loop.index0 }}">
+                            <label style="font-size:11.5px;">Name</label>
+                            <input type="text" name="rev_name" value="{{ r.name }}" required>
+                            <label style="font-size:11.5px;">Review Text</label>
+                            <input type="text" name="rev_text" value="{{ r.text }}" required>
+                            <label style="font-size:11.5px;">Star Rating</label>
+                            <select name="rev_star">
+                                <option value="⭐⭐⭐⭐⭐" {% if r.rating == '⭐⭐⭐⭐⭐' %}selected{% endif %}>⭐⭐⭐⭐⭐ (5 Star)</option>
+                                <option value="⭐⭐⭐⭐" {% if r.rating == '⭐⭐⭐⭐' %}selected{% endif %}>⭐⭐⭐⭐ (4 Star)</option>
+                            </select>
+                            <button type="submit" class="btn-main" style="background:#f59e0b; color:#000; padding:8px; font-size:12px;">Save Review 💾</button>
+                        </form>
+                    </div>
                 </div>
                 {% endfor %}
             {% endif %}
@@ -497,20 +567,37 @@
 
             <hr style="border-color: #28324a; margin: 25px 0;">
 
-            <!-- ❓ FAQ MANAGEMENT -->
+            <!-- ❓ FAQ MANAGEMENT (WITH EDIT) -->
             <h3 style="color: #38bdf8;">❓ FAQ Management</h3>
             {% if data.faqs %}
                 {% for f in data.faqs %}
                 <div class="link-item">
-                    <div>
-                        <strong>Q: {{ f.q }}</strong><br>
-                        <small style="color: #94a3b8;">A: {{ f.a }}</small>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong>Q: {{ f.q }}</strong><br>
+                            <small style="color: #94a3b8;">A: {{ f.a }}</small>
+                        </div>
+                        <div style="display:flex;">
+                            <button type="button" class="edit-btn" onclick="toggleEdit('faq-edit-{{ loop.index0 }}')">✏️ Edit</button>
+                            <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                                <input type="hidden" name="action" value="delete_faq">
+                                <input type="hidden" name="index" value="{{ loop.index0 }}">
+                                <button type="submit" class="del-btn">Delete</button>
+                            </form>
+                        </div>
                     </div>
-                    <form method="POST" action="/admin/dashboard" style="margin: 0;">
-                        <input type="hidden" name="action" value="delete_faq">
-                        <input type="hidden" name="index" value="{{ loop.index0 }}">
-                        <button type="submit" class="del-btn">Delete</button>
-                    </form>
+                    <!-- Inline Edit Form -->
+                    <div id="faq-edit-{{ loop.index0 }}" class="edit-collapse">
+                        <form method="POST" action="/admin/dashboard" style="margin:0;">
+                            <input type="hidden" name="action" value="edit_faq">
+                            <input type="hidden" name="index" value="{{ loop.index0 }}">
+                            <label style="font-size:11.5px;">Question</label>
+                            <input type="text" name="faq_q" value="{{ f.q }}" required>
+                            <label style="font-size:11.5px;">Answer</label>
+                            <input type="text" name="faq_a" value="{{ f.a }}" required>
+                            <button type="submit" class="btn-main" style="background:#0284c7; padding:8px; font-size:12px;">Save FAQ 💾</button>
+                        </form>
+                    </div>
                 </div>
                 {% endfor %}
             {% endif %}
@@ -525,23 +612,58 @@
 
             <hr style="border-color: #28324a; margin: 25px 0;">
 
-            <!-- 📊 LINK MANAGEMENT -->
+            <!-- 📊 LINK MANAGEMENT (WITH EDIT) -->
             <h3 style="color: #ef4444;">🔥 Links & Highlight Tags</h3>
             {% for link in data.links %}
             <div class="link-item">
-                <div>
-                    <strong>{{ link.name }}</strong>
-                    {% if link.highlight %}
-                    <span style="background: linear-gradient(135deg,#ef4444,#f59e0b); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 800;">{{ link.highlight }}</span>
-                    {% endif %}
-                    <span style="background: #3b82f6; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 800;">👁️ {{ link.clicks|default(0) }} clicks</span><br>
-                    <small style="color: #64748b;">{{ link.url }}</small>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>{{ link.name }}</strong>
+                        {% if link.highlight %}
+                        <span style="background: linear-gradient(135deg,#ef4444,#f59e0b); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 800;">{{ link.highlight }}</span>
+                        {% endif %}
+                        <span style="background: #3b82f6; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 800;">👁️ {{ link.clicks|default(0) }} clicks</span><br>
+                        <small style="color: #64748b;">{{ link.url }}</small>
+                    </div>
+                    <div style="display:flex;">
+                        <button type="button" class="edit-btn" onclick="toggleEdit('link-edit-{{ loop.index0 }}')">✏️ Edit</button>
+                        <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                            <input type="hidden" name="action" value="delete_link">
+                            <input type="hidden" name="index" value="{{ loop.index0 }}">
+                            <button type="submit" class="del-btn">Delete</button>
+                        </form>
+                    </div>
                 </div>
-                <form method="POST" action="/admin/dashboard" style="margin: 0;">
-                    <input type="hidden" name="action" value="delete_link">
-                    <input type="hidden" name="index" value="{{ loop.index0 }}">
-                    <button type="submit" class="del-btn">Delete</button>
-                </form>
+                <!-- Inline Edit Form -->
+                <div id="link-edit-{{ loop.index0 }}" class="edit-collapse">
+                    <form method="POST" action="/admin/dashboard" style="margin:0;">
+                        <input type="hidden" name="action" value="edit_link">
+                        <input type="hidden" name="index" value="{{ loop.index0 }}">
+                        <label style="font-size:11.5px;">Button Name</label>
+                        <input type="text" name="name" value="{{ link.name }}" required>
+                        <label style="font-size:11.5px;">Link URL</label>
+                        <input type="text" name="url" value="{{ link.url }}" required>
+                        <label style="font-size:11.5px;">Highlight Tag</label>
+                        <select name="highlight">
+                            <option value="" {% if not link.highlight %}selected{% endif %}>-- No Glow Tag --</option>
+                            <option value="🔥 VIRAL" {% if link.highlight == '🔥 VIRAL' %}selected{% endif %}>🔥 VIRAL</option>
+                            <option value="⚡ NEW" {% if link.highlight == '⚡ NEW' %}selected{% endif %}>⚡ NEW</option>
+                            <option value="🚀 TRENDING" {% if link.highlight == '🚀 TRENDING' %}selected{% endif %}>🚀 TRENDING</option>
+                            <option value="💥 MUST WATCH" {% if link.highlight == '💥 MUST WATCH' %}selected{% endif %}>💥 MUST WATCH</option>
+                            <option value="💎 VIP" {% if link.highlight == '💎 VIP' %}selected{% endif %}>💎 VIP</option>
+                        </select>
+                        <label style="font-size:11.5px;">Platform Icon</label>
+                        <select name="type">
+                            <option value="youtube" {% if link.type == 'youtube' %}selected{% endif %}>YouTube</option>
+                            <option value="facebook" {% if link.type == 'facebook' %}selected{% endif %}>Facebook</option>
+                            <option value="telegram" {% if link.type == 'telegram' %}selected{% endif %}>Telegram</option>
+                            <option value="instagram" {% if link.type == 'instagram' %}selected{% endif %}>Instagram</option>
+                            <option value="moj" {% if link.type == 'moj' %}selected{% endif %}>Moj</option>
+                            <option value="other" {% if link.type == 'other' %}selected{% endif %}>Other</option>
+                        </select>
+                        <button type="submit" class="btn-main" style="background:#10b981; padding:8px; font-size:12px;">Save Link 💾</button>
+                    </form>
+                </div>
             </div>
             {% endfor %}
 
@@ -573,20 +695,48 @@
 
             <hr style="border-color: #28324a; margin: 25px 0;">
 
-            <!-- 🛍️ GEARS -->
+            <!-- 🛍️ GEARS (WITH EDIT) -->
             <h3 style="color: #f59e0b;">🛍️ My Gears & Setup</h3>
             {% if data.gears %}
                 {% for gear in data.gears %}
                 <div class="link-item">
-                    <div>
-                        <strong><i class="{{ gear.icon }}"></i> {{ gear.name }}</strong> ({{ gear.tag }})<br>
-                        <small style="color: #64748b;">{{ gear.url }}</small>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong><i class="{{ gear.icon }}"></i> {{ gear.name }}</strong> ({{ gear.tag }})<br>
+                            <small style="color: #64748b;">{{ gear.url }}</small>
+                        </div>
+                        <div style="display:flex;">
+                            <button type="button" class="edit-btn" onclick="toggleEdit('gear-edit-{{ loop.index0 }}')">✏️ Edit</button>
+                            <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                                <input type="hidden" name="action" value="delete_gear">
+                                <input type="hidden" name="index" value="{{ loop.index0 }}">
+                                <button type="submit" class="del-btn">Delete</button>
+                            </form>
+                        </div>
                     </div>
-                    <form method="POST" action="/admin/dashboard" style="margin: 0;">
-                        <input type="hidden" name="action" value="delete_gear">
-                        <input type="hidden" name="index" value="{{ loop.index0 }}">
-                        <button type="submit" class="del-btn">Delete</button>
-                    </form>
+                    <!-- Inline Edit Form -->
+                    <div id="gear-edit-{{ loop.index0 }}" class="edit-collapse">
+                        <form method="POST" action="/admin/dashboard" style="margin:0;">
+                            <input type="hidden" name="action" value="edit_gear">
+                            <input type="hidden" name="index" value="{{ loop.index0 }}">
+                            <label style="font-size:11.5px;">Item Name</label>
+                            <input type="text" name="gear_name" value="{{ gear.name }}" required>
+                            <label style="font-size:11.5px;">Tag / Purpose</label>
+                            <input type="text" name="gear_tag" value="{{ gear.tag }}" required>
+                            <label style="font-size:11.5px;">Affiliate URL</label>
+                            <input type="text" name="gear_url" value="{{ gear.url }}" required>
+                            <label style="font-size:11.5px;">Icon</label>
+                            <select name="gear_icon">
+                                <option value="fa-solid fa-mobile-screen" {% if gear.icon == 'fa-solid fa-mobile-screen' %}selected{% endif %}>📱 Phone / Camera</option>
+                                <option value="fa-solid fa-microphone-lines" {% if gear.icon == 'fa-solid fa-microphone-lines' %}selected{% endif %}>🎙️ Microphone</option>
+                                <option value="fa-solid fa-film" {% if gear.icon == 'fa-solid fa-film' %}selected{% endif %}>🎬 Editing App</option>
+                                <option value="fa-solid fa-lightbulb" {% if gear.icon == 'fa-solid fa-lightbulb' %}selected{% endif %}>💡 Lighting</option>
+                                <option value="fa-solid fa-camera" {% if gear.icon == 'fa-solid fa-camera' %}selected{% endif %}>📷 Tripod</option>
+                                <option value="fa-solid fa-bag-shopping" {% if gear.icon == 'fa-solid fa-bag-shopping' %}selected{% endif %}>🛍️ Other</option>
+                            </select>
+                            <button type="submit" class="btn-main" style="background:#f59e0b; color:#000; padding:8px; font-size:12px;">Save Gear Item 💾</button>
+                        </form>
+                    </div>
                 </div>
                 {% endfor %}
             {% endif %}
@@ -632,6 +782,15 @@
     </div>
 
     <script>
+        function toggleEdit(id) {
+            const el = document.getElementById(id);
+            if (el.style.display === 'block') {
+                el.style.display = 'none';
+            } else {
+                el.style.display = 'block';
+            }
+        }
+
         function sendTgOtpDash() {
             const btn = document.getElementById('dash-tg-btn');
             const alertBox = document.getElementById('live-alert-box');
