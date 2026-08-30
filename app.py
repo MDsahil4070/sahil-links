@@ -18,6 +18,24 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 DATA_FILE = os.path.join(BASE_DIR, "data.json")
 
+DEFAULT_BLOCKS = [
+    {"id": "notice", "name": "📢 Live Announcement Notice", "enabled": True},
+    {"id": "milestones", "name": "🏆 Milestones & Achievements", "enabled": True},
+    {"id": "about", "name": "📖 About Me & Creator Journey", "enabled": True},
+    {"id": "gallery", "name": "📸 Photo Gallery & BTS Shots", "enabled": True},
+    {"id": "countdown", "name": "⏱️ Next Video Countdown Timer", "enabled": True},
+    {"id": "poll", "name": "📊 Live Fan Poll & Voting", "enabled": True},
+    {"id": "video", "name": "🎬 Latest YouTube Video/Short", "enabled": True},
+    {"id": "subscribe", "name": "🔥 Hot Subscribe Button", "enabled": True},
+    {"id": "links", "name": "🔗 Social Links Group", "enabled": True},
+    {"id": "gears", "name": "🛍️ My Gear & Shooting Setup", "enabled": True},
+    {"id": "reviews", "name": "⭐ Fan Reviews & Testimonials", "enabled": True},
+    {"id": "faq", "name": "❓ FAQ / Questions & Answers", "enabled": True},
+    {"id": "upi", "name": "💸 UPI QR Support Card", "enabled": True},
+    {"id": "whatsapp", "name": "💬 WhatsApp Business Chat", "enabled": True},
+    {"id": "contact", "name": "📩 Direct Fan Message Box", "enabled": True}
+]
+
 def extract_video_id(url):
     if not url: return None
     patterns = [
@@ -88,23 +106,7 @@ def load_data():
                 {"name": "Aman (Creator Friend)", "rating": "⭐⭐⭐⭐⭐", "text": "भाई की हर एक कॉमेडी वीडियो एक नंबर होती है! देसी वाइब हमेशा ऑन टॉप 🔥"},
                 {"name": "Rahul Verma", "rating": "⭐⭐⭐⭐⭐", "text": "Bihari comedy skits are super relatable and funniest!"}
             ],
-            "blocks": [
-                {"id": "notice", "name": "📢 Live Announcement Notice", "enabled": True},
-                {"id": "milestones", "name": "🏆 Milestones & Achievements", "enabled": True},
-                {"id": "about", "name": "📖 About Me & Creator Journey", "enabled": True},
-                {"id": "gallery", "name": "📸 Photo Gallery & BTS Shots", "enabled": True},
-                {"id": "countdown", "name": "⏱️ Next Video Countdown Timer", "enabled": True},
-                {"id": "poll", "name": "📊 Live Fan Poll & Voting", "enabled": True},
-                {"id": "video", "name": "🎬 Latest YouTube Video/Short", "enabled": True},
-                {"id": "subscribe", "name": "🔥 Hot Subscribe Button", "enabled": True},
-                {"id": "links", "name": "🔗 Social Links Group", "enabled": True},
-                {"id": "gears", "name": "🛍️ My Gear & Shooting Setup", "enabled": True},
-                {"id": "reviews", "name": "⭐ Fan Reviews & Testimonials", "enabled": True},
-                {"id": "faq", "name": "❓ FAQ / Questions & Answers", "enabled": True},
-                {"id": "upi", "name": "💸 UPI QR Support Card", "enabled": True},
-                {"id": "whatsapp", "name": "💬 WhatsApp Business Chat", "enabled": True},
-                {"id": "contact", "name": "📩 Direct Fan Message Box", "enabled": True}
-            ],
+            "blocks": DEFAULT_BLOCKS,
             "links": [
                 {"name": "YouTube Channel", "url": "https://youtube.com/@sahil.com590_", "type": "youtube", "icon": "fa-brands fa-youtube", "clicks": 0, "highlight": "🔥 VIRAL"},
                 {"name": "Join Telegram", "url": "https://t.me", "type": "telegram", "icon": "fa-brands fa-telegram", "clicks": 0, "highlight": "⚡ NEW"},
@@ -125,16 +127,40 @@ def load_data():
         with open(DATA_FILE, "w", encoding="utf-8") as f:
             json.dump(default_data, f, ensure_ascii=False, indent=4)
         return default_data
+        
     with open(DATA_FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
-        if "admin_pin" not in data: data["admin_pin"] = "590590"
-        if "views_history" not in data: data["views_history"] = []
-        if "clicks_history" not in data: data["clicks_history"] = []
-        if "total_views" not in data: data["total_views"] = len(data.get("views_history", []))
-        if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
-        if "custom_themes" not in data: data["custom_themes"] = []
-        if "custom_css" not in data: data["custom_css"] = ""
-        return data
+        try:
+            data = json.load(f)
+        except Exception:
+            data = {}
+
+    # Strict state preservation for blocks (never reset user's OFF state)
+    if "blocks" not in data or not isinstance(data["blocks"], list):
+        data["blocks"] = DEFAULT_BLOCKS
+    else:
+        existing_block_ids = {b.get("id"): b for b in data["blocks"] if isinstance(b, dict)}
+        merged_blocks = []
+        for b in data["blocks"]:
+            if isinstance(b, dict) and "id" in b:
+                merged_blocks.append(b)
+        for def_b in DEFAULT_BLOCKS:
+            if def_b["id"] not in existing_block_ids:
+                merged_blocks.append(def_b)
+        data["blocks"] = merged_blocks
+
+    if "admin_pin" not in data: data["admin_pin"] = "590590"
+    if "views_history" not in data or not isinstance(data["views_history"], list): data["views_history"] = []
+    if "clicks_history" not in data or not isinstance(data["clicks_history"], list): data["clicks_history"] = []
+    if "total_views" not in data: data["total_views"] = len(data.get("views_history", []))
+    if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
+    if "custom_themes" not in data: data["custom_themes"] = []
+    if "custom_css" not in data: data["custom_css"] = ""
+    if "links" not in data: data["links"] = []
+    if "gallery" not in data: data["gallery"] = []
+    if "gears" not in data: data["gears"] = []
+    if "reviews" not in data: data["reviews"] = []
+    if "faqs" not in data: data["faqs"] = []
+    return data
 
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
@@ -149,21 +175,20 @@ def calculate_stats(history_list):
     today_count = 0
     two_days_count = 0
     seven_days_count = 0
-    lifetime_count = len(history_list)
+    lifetime_count = len(history_list) if isinstance(history_list, list) else 0
     
-    for item in history_list:
-        try:
-            item_date = datetime.strptime(item.split("T")[0], "%Y-%m-%d")
-            item_full = datetime.strptime(item, "%Y-%m-%dT%H:%M:%S")
-            
-            if item.startswith(today_str):
-                today_count += 1
-            if item_full >= two_days_ago:
-                two_days_count += 1
-            if item_full >= seven_days_ago:
-                seven_days_count += 1
-        except Exception:
-            pass
+    if isinstance(history_list, list):
+        for item in history_list:
+            try:
+                item_full = datetime.strptime(str(item), "%Y-%m-%dT%H:%M:%S")
+                if str(item).startswith(today_str):
+                    today_count += 1
+                if item_full >= two_days_ago:
+                    two_days_count += 1
+                if item_full >= seven_days_ago:
+                    seven_days_count += 1
+            except Exception:
+                pass
             
     return {
         "today": today_count,
@@ -271,6 +296,7 @@ def send_message():
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
     data = load_data()
+    empty_stats = {"today": 0, "two_days": 0, "seven_days": 0, "lifetime": 0}
     if session.get("logged_in"): return redirect(url_for("admin_dashboard"))
     if request.method == "POST":
         user = request.form.get("username")
@@ -281,8 +307,8 @@ def admin():
             session["logged_in"] = True
             return redirect(url_for("admin_dashboard"))
         else:
-            return render_template("admin.html", logged_in=False, data=data, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
-    return render_template("admin.html", logged_in=False, data=data)
+            return render_template("admin.html", logged_in=False, data=data, views_stats=empty_stats, clicks_stats=empty_stats, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
+    return render_template("admin.html", logged_in=False, data=data, views_stats=empty_stats, clicks_stats=empty_stats)
 
 @app.route("/admin/send_tg_otp", methods=["POST"])
 def send_tg_otp():
@@ -298,6 +324,7 @@ def send_tg_otp():
 @app.route("/admin/reset_password_otp", methods=["POST"])
 def reset_password_otp():
     data = load_data()
+    empty_stats = {"today": 0, "two_days": 0, "seven_days": 0, "lifetime": 0}
     entered_otp = request.form.get("reset_otp", "").strip()
     new_user = request.form.get("reset_user", "").strip()
     new_pass = request.form.get("reset_pass", "").strip()
@@ -314,7 +341,7 @@ def reset_password_otp():
         session["logged_in"] = True
         return redirect(url_for("admin_dashboard"))
     else:
-        return render_template("admin.html", logged_in=False, data=data, error="❌ गलत Telegram OTP कोड! रीसेट विफल हुआ।")
+        return render_template("admin.html", logged_in=False, data=data, views_stats=empty_stats, clicks_stats=empty_stats, error="❌ गलत Telegram OTP कोड! रीसेट विफल हुआ।")
 
 @app.route("/admin/download_backup")
 def download_backup():
@@ -331,7 +358,6 @@ def admin_dashboard():
     views_stats = calculate_stats(data.get("views_history", []))
     clicks_stats = calculate_stats(data.get("clicks_history", []))
     
-    # Fallback to sum of link clicks if history is newly initialized
     if clicks_stats["lifetime"] == 0:
         total_l_clicks = sum(l.get("clicks", 0) for l in data.get("links", []))
         clicks_stats["lifetime"] = total_l_clicks
@@ -342,7 +368,27 @@ def admin_dashboard():
     if request.method == "POST":
         action = request.form.get("action")
 
-        if action == "edit_link":
+        # 🔄 BLOCK TOGGLE & REORDER (PERMANENT SAVE)
+        if action == "toggle_block":
+            idx = int(request.form.get("index"))
+            if 0 <= idx < len(data["blocks"]):
+                data["blocks"][idx]["enabled"] = not data["blocks"][idx].get("enabled", True)
+                save_data(data)
+                status_text = "चालू (ON)" if data["blocks"][idx]["enabled"] else "बंद (OFF)"
+                msg_status = f"✅ '{data['blocks'][idx]['name']}' अब {status_text} है!"
+
+        elif action == "move_up":
+            idx = int(request.form.get("index"))
+            if idx > 0:
+                data["blocks"][idx], data["blocks"][idx-1] = data["blocks"][idx-1], data["blocks"][idx]
+                save_data(data)
+        elif action == "move_down":
+            idx = int(request.form.get("index"))
+            if idx < len(data["blocks"]) - 1:
+                data["blocks"][idx], data["blocks"][idx+1] = data["blocks"][idx+1], data["blocks"][idx]
+                save_data(data)
+
+        elif action == "edit_link":
             idx = int(request.form.get("index"))
             if 0 <= idx < len(data["links"]):
                 name = request.form.get("name")
@@ -363,6 +409,28 @@ def admin_dashboard():
                 save_data(data)
                 msg_status = f"✅ लिंक '{name}' अपडेट हो गया!"
 
+        elif action == "add_link":
+            name = request.form.get("name")
+            url = request.form.get("url")
+            ltype = request.form.get("type", "other")
+            highlight = request.form.get("highlight", "").strip()
+            icon = "fa-solid fa-link"
+            if "youtube" in ltype: icon = "fa-brands fa-youtube"
+            elif "facebook" in ltype: icon = "fa-brands fa-facebook-f"
+            elif "telegram" in ltype: icon = "fa-brands fa-telegram"
+            elif "instagram" in ltype: icon = "fa-brands fa-instagram"
+            elif "moj" in ltype: icon = "fa-solid fa-video"
+            data["links"].append({"name": name, "url": url, "type": ltype, "icon": icon, "clicks": 0, "highlight": highlight})
+            save_data(data)
+            msg_status = "✅ नया लिंक सफलतापूर्वक जोड़ा गया!"
+
+        elif action == "delete_link":
+            idx = int(request.form.get("index"))
+            if 0 <= idx < len(data["links"]):
+                data["links"].pop(idx)
+                save_data(data)
+                msg_status = "✅ लिंक हटा दिया गया!"
+
         elif action == "edit_gear":
             idx = int(request.form.get("index"))
             if "gears" in data and 0 <= idx < len(data["gears"]):
@@ -375,6 +443,22 @@ def admin_dashboard():
                 save_data(data)
                 msg_status = "✅ Gear आइटम अपडेट हो गया!"
 
+        elif action == "add_gear":
+            g_name = request.form.get("gear_name")
+            g_tag = request.form.get("gear_tag")
+            g_url = request.form.get("gear_url")
+            g_icon = request.form.get("gear_icon", "fa-solid fa-bag-shopping")
+            if "gears" not in data: data["gears"] = []
+            data["gears"].append({"name": g_name, "tag": g_tag, "url": g_url, "icon": g_icon})
+            save_data(data)
+            msg_status = "✅ नया Gear जोड़ा गया!"
+
+        elif action == "delete_gear":
+            idx = int(request.form.get("index"))
+            if "gears" in data and 0 <= idx < len(data["gears"]):
+                data["gears"].pop(idx)
+                save_data(data)
+
         elif action == "edit_milestone":
             idx = int(request.form.get("index"))
             if "milestones" in data and 0 <= idx < len(data["milestones"]):
@@ -386,6 +470,21 @@ def admin_dashboard():
                 save_data(data)
                 msg_status = "✅ माइलस्टोन अपडेट हो गया!"
 
+        elif action == "add_milestone":
+            m_title = request.form.get("m_title")
+            m_desc = request.form.get("m_desc")
+            m_icon = request.form.get("m_icon", "fa-solid fa-award")
+            if "milestones" not in data: data["milestones"] = []
+            data["milestones"].append({"title": m_title, "desc": m_desc, "icon": m_icon})
+            save_data(data)
+            msg_status = "✅ नया माइलस्टोन जोड़ा गया!"
+
+        elif action == "delete_milestone":
+            idx = int(request.form.get("index"))
+            if "milestones" in data and 0 <= idx < len(data["milestones"]):
+                data["milestones"].pop(idx)
+                save_data(data)
+
         elif action == "edit_faq":
             idx = int(request.form.get("index"))
             if "faqs" in data and 0 <= idx < len(data["faqs"]):
@@ -395,6 +494,20 @@ def admin_dashboard():
                 }
                 save_data(data)
                 msg_status = "✅ FAQ अपडेट हो गया!"
+
+        elif action == "add_faq":
+            q = request.form.get("faq_q")
+            a = request.form.get("faq_a")
+            if "faqs" not in data: data["faqs"] = []
+            data["faqs"].append({"q": q, "a": a})
+            save_data(data)
+            msg_status = "✅ नया FAQ जोड़ा गया!"
+
+        elif action == "delete_faq":
+            idx = int(request.form.get("index"))
+            if "faqs" in data and 0 <= idx < len(data["faqs"]):
+                data["faqs"].pop(idx)
+                save_data(data)
 
         elif action == "edit_review":
             idx = int(request.form.get("index"))
@@ -406,6 +519,21 @@ def admin_dashboard():
                 }
                 save_data(data)
                 msg_status = "✅ रिव्यू अपडेट हो गया!"
+
+        elif action == "add_review":
+            r_name = request.form.get("rev_name")
+            r_text = request.form.get("rev_text")
+            r_star = request.form.get("rev_star", "⭐⭐⭐⭐⭐")
+            if "reviews" not in data: data["reviews"] = []
+            data["reviews"].append({"name": r_name, "rating": r_star, "text": r_text})
+            save_data(data)
+            msg_status = "✅ नया रिव्यू जोड़ा गया!"
+
+        elif action == "delete_review":
+            idx = int(request.form.get("index"))
+            if "reviews" in data and 0 <= idx < len(data["reviews"]):
+                data["reviews"].pop(idx)
+                save_data(data)
 
         elif action == "edit_gallery_photo":
             idx = int(request.form.get("index"))
@@ -421,6 +549,27 @@ def admin_dashboard():
                 data["gallery"][idx] = {"title": g_title, "url": photo_url}
                 save_data(data)
                 msg_status = "✅ गैलरी फोटो अपडेट हो गई!"
+
+        elif action == "add_gallery_photo":
+            g_title = request.form.get("g_title")
+            photo_url = request.form.get("photo_url", "").strip()
+            if 'photo_file' in request.files:
+                file = request.files['photo_file']
+                if file and file.filename != '':
+                    fname = secure_filename(file.filename)
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                    photo_url = f"/static/uploads/{fname}"
+            if photo_url:
+                if "gallery" not in data: data["gallery"] = []
+                data["gallery"].append({"title": g_title, "url": photo_url})
+                save_data(data)
+                msg_status = "✅ नई फोटो गैलरी में जुड़ गई!"
+
+        elif action == "delete_gallery_photo":
+            idx = int(request.form.get("index"))
+            if "gallery" in data and 0 <= idx < len(data["gallery"]):
+                data["gallery"].pop(idx)
+                save_data(data)
 
         elif action == "update_security_credentials":
             new_u = request.form.get("new_username", "").strip()
@@ -506,22 +655,6 @@ def admin_dashboard():
                 save_data(data)
                 msg_status = "✅ कस्टम थीम हटा दी गई!"
 
-        elif action == "move_up":
-            idx = int(request.form.get("index"))
-            if idx > 0:
-                data["blocks"][idx], data["blocks"][idx-1] = data["blocks"][idx-1], data["blocks"][idx]
-                save_data(data)
-        elif action == "move_down":
-            idx = int(request.form.get("index"))
-            if idx < len(data["blocks"]) - 1:
-                data["blocks"][idx], data["blocks"][idx+1] = data["blocks"][idx+1], data["blocks"][idx]
-                save_data(data)
-                
-        elif action == "toggle_block":
-            idx = int(request.form.get("index"))
-            data["blocks"][idx]["enabled"] = not data["blocks"][idx]["enabled"]
-            save_data(data)
-
         elif action == "update_profile":
             data["title"] = request.form.get("title")
             data["tagline"] = request.form.get("tagline")
@@ -559,40 +692,6 @@ def admin_dashboard():
             save_data(data)
             msg_status = "✅ सेटिंग्स सुरक्षित हो गईं!"
 
-        elif action == "add_milestone":
-            m_title = request.form.get("m_title")
-            m_desc = request.form.get("m_desc")
-            m_icon = request.form.get("m_icon", "fa-solid fa-award")
-            if "milestones" not in data: data["milestones"] = []
-            data["milestones"].append({"title": m_title, "desc": m_desc, "icon": m_icon})
-            save_data(data)
-
-        elif action == "delete_milestone":
-            idx = int(request.form.get("index"))
-            if "milestones" in data and 0 <= idx < len(data["milestones"]):
-                data["milestones"].pop(idx)
-                save_data(data)
-
-        elif action == "add_gallery_photo":
-            g_title = request.form.get("g_title")
-            photo_url = request.form.get("photo_url", "")
-            if 'photo_file' in request.files:
-                file = request.files['photo_file']
-                if file and file.filename != '':
-                    fname = secure_filename(file.filename)
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
-                    photo_url = f"/static/uploads/{fname}"
-            if photo_url:
-                if "gallery" not in data: data["gallery"] = []
-                data["gallery"].append({"title": g_title, "url": photo_url})
-                save_data(data)
-
-        elif action == "delete_gallery_photo":
-            idx = int(request.form.get("index"))
-            if "gallery" in data and 0 <= idx < len(data["gallery"]):
-                data["gallery"].pop(idx)
-                save_data(data)
-
         elif action == "update_poll":
             q = request.form.get("poll_question")
             opt1 = request.form.get("poll_opt1")
@@ -608,68 +707,7 @@ def admin_dashboard():
             if opt3 and opt3.strip():
                 data["poll"]["options"].append({"text": opt3.strip(), "votes": 0})
             save_data(data)
-            
-        elif action == "add_review":
-            r_name = request.form.get("rev_name")
-            r_text = request.form.get("rev_text")
-            r_star = request.form.get("rev_star", "⭐⭐⭐⭐⭐")
-            if "reviews" not in data: data["reviews"] = []
-            data["reviews"].append({"name": r_name, "rating": r_star, "text": r_text})
-            save_data(data)
-
-        elif action == "delete_review":
-            idx = int(request.form.get("index"))
-            if "reviews" in data and 0 <= idx < len(data["reviews"]):
-                data["reviews"].pop(idx)
-                save_data(data)
-
-        elif action == "add_link":
-            name = request.form.get("name")
-            url = request.form.get("url")
-            ltype = request.form.get("type", "other")
-            highlight = request.form.get("highlight", "").strip()
-            icon = "fa-solid fa-link"
-            if "youtube" in ltype: icon = "fa-brands fa-youtube"
-            elif "facebook" in ltype: icon = "fa-brands fa-facebook-f"
-            elif "telegram" in ltype: icon = "fa-brands fa-telegram"
-            elif "instagram" in ltype: icon = "fa-brands fa-instagram"
-            elif "moj" in ltype: icon = "fa-solid fa-video"
-            data["links"].append({"name": name, "url": url, "type": ltype, "icon": icon, "clicks": 0, "highlight": highlight})
-            save_data(data)
-            
-        elif action == "delete_link":
-            idx = int(request.form.get("index"))
-            if 0 <= idx < len(data["links"]):
-                data["links"].pop(idx)
-                save_data(data)
-
-        elif action == "add_gear":
-            g_name = request.form.get("gear_name")
-            g_tag = request.form.get("gear_tag")
-            g_url = request.form.get("gear_url")
-            g_icon = request.form.get("gear_icon", "fa-solid fa-bag-shopping")
-            if "gears" not in data: data["gears"] = []
-            data["gears"].append({"name": g_name, "tag": g_tag, "url": g_url, "icon": g_icon})
-            save_data(data)
-
-        elif action == "delete_gear":
-            idx = int(request.form.get("index"))
-            if "gears" in data and 0 <= idx < len(data["gears"]):
-                data["gears"].pop(idx)
-                save_data(data)
-
-        elif action == "add_faq":
-            q = request.form.get("faq_q")
-            a = request.form.get("faq_a")
-            if "faqs" not in data: data["faqs"] = []
-            data["faqs"].append({"q": q, "a": a})
-            save_data(data)
-
-        elif action == "delete_faq":
-            idx = int(request.form.get("index"))
-            if "faqs" in data and 0 <= idx < len(data["faqs"]):
-                data["faqs"].pop(idx)
-                save_data(data)
+            msg_status = "✅ पोल अपडेट हो गया!"
 
         elif action == "clear_messages":
             data["messages"] = []
