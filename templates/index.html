@@ -74,6 +74,21 @@
         .stat-badge { display: inline-block; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; color: #38bdf8; margin-bottom: 8px; }
         .bio { font-size: 13.5px; color: #94a3b8; white-space: pre-line; margin-bottom: 14px; }
 
+        /* 🏆 MILESTONES ROW */
+        .milestones-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+        .m-card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 10px 6px; text-align: center; }
+        .m-icon { font-size: 16px; color: #fbbf24; margin-bottom: 4px; }
+        .m-title { font-size: 11px; font-weight: 800; color: #fff; line-height: 1.2; }
+        .m-desc { font-size: 9.5px; color: #94a3b8; font-weight: 600; }
+
+        /* 📸 PHOTO GALLERY SCROLLER */
+        .gallery-box { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 12px; margin-bottom: 14px; text-align: left; }
+        .gallery-scroll { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+        .gallery-scroll::-webkit-scrollbar { display: none; }
+        .gallery-item { min-width: 140px; width: 140px; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+        .gallery-item img { width: 100%; height: 110px; object-fit: cover; }
+        .gallery-cap { font-size: 10.5px; font-weight: 700; color: #e2e8f0; padding: 4px 6px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         .about-accordion {
             background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px; margin-bottom: 14px; text-align: left; overflow: hidden;
@@ -244,6 +259,19 @@
                 </div>
                 {% endif %}
 
+                <!-- 🏆 MILESTONES BLOCK -->
+                {% if block.id == 'milestones' and data.milestones %}
+                <div class="milestones-grid">
+                    {% for m in data.milestones %}
+                    <div class="m-card">
+                        <div class="m-icon"><i class="{{ m.icon }}"></i></div>
+                        <div class="m-title">{{ m.title }}</div>
+                        <div class="m-desc">{{ m.desc }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 <!-- 📖 ABOUT ME ACCORDION BLOCK -->
                 {% if block.id == 'about' and data.about_story %}
                 <div class="about-accordion" onclick="this.classList.toggle('active')">
@@ -253,6 +281,21 @@
                     </div>
                     <div class="about-content">
                         {{ data.about_story }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 📸 BTS PHOTO GALLERY -->
+                {% if block.id == 'gallery' and data.gallery %}
+                <div class="gallery-box">
+                    <div style="font-size: 12.5px; font-weight: 800; color: #38bdf8; margin-bottom: 8px;"><i class="fa-solid fa-camera-retro"></i> BTS & Moments</div>
+                    <div class="gallery-scroll">
+                        {% for img in data.gallery %}
+                        <div class="gallery-item">
+                            <img src="{{ img.url }}" alt="{{ img.title }}">
+                            <div class="gallery-cap">{{ img.title }}</div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
                 {% endif %}

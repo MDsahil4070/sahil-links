@@ -35,7 +35,7 @@ def load_data():
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
             "bio": "🎬 Content Creator & Comedy Skits\n🔥 Connect with me on all official handles!",
-            "about_story": "नमस्ते दोस्तों! 🙏 मैं साहिल हूँ, बिहार से। मेरा लक्ष्य अपने देसी अंदाज, खांटी बिहारी कॉमेडी और रिलेटेबल लाइफ सिचुएशन्स से आप सभी के चेहरे पर मुस्कान लाना है। यहाँ आपको मेरे सभी ऑफिशियल सोशल मीडिया हैंडल्स, शूटिंग गैजेट्स और लेटेस्ट अपडेट्स मिलेंगे। सपोर्ट करने के लिए दिल से धन्यवाद! ❤️",
+            "about_story": "नमस्ते दोस्तों! 🙏 मैं साहिल हूँ, बिहार से। मेरा लक्ष्य अपने देसी अंदाज, खांटी बिहारी कॉमेडी और रिलेटेबल लाइफ सिचुएशन्स से आप सभी के चेहरे पर मुस्कान लाना है। सपोर्ट करने के लिए दिल से धन्यवाद! ❤️",
             "avatar_url": "/static/uploads/avatar.jpg",
             "theme": "theme-red",
             "adsense_client": "",
@@ -53,6 +53,15 @@ def load_data():
             "whatsapp_num": "919876543210",
             "upi_id": "sahil@upi",
             "upi_name": "Sahil",
+            "milestones": [
+                {"title": "100K+ Community", "desc": "Fast Growing", "icon": "fa-solid fa-users"},
+                {"title": "10M+ Video Views", "desc": "Viral Skits", "icon": "fa-solid fa-fire"},
+                {"title": "Top Bihar Creator", "desc": "Desi Comedy", "icon": "fa-solid fa-crown"}
+            ],
+            "gallery": [
+                {"title": "Shooting BTS 🎬", "url": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&auto=format&fit=crop&q=60"},
+                {"title": "On Location Set 🎥", "url": "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=600&auto=format&fit=crop&q=60"}
+            ],
             "poll": {
                 "question": "मेरी अगली कॉमेडी वीडियो किस टॉपिक पर देखना चाहते हैं? 🤔",
                 "options": [
@@ -67,7 +76,9 @@ def load_data():
             ],
             "blocks": [
                 {"id": "notice", "name": "📢 Live Announcement Notice", "enabled": True},
+                {"id": "milestones", "name": "🏆 Milestones & Achievements", "enabled": True},
                 {"id": "about", "name": "📖 About Me & Creator Journey", "enabled": True},
+                {"id": "gallery", "name": "📸 Photo Gallery & BTS Shots", "enabled": True},
                 {"id": "countdown", "name": "⏱️ Next Video Countdown Timer", "enabled": True},
                 {"id": "poll", "name": "📊 Live Fan Poll & Voting", "enabled": True},
                 {"id": "video", "name": "🎬 Latest YouTube Video/Short", "enabled": True},
@@ -102,8 +113,21 @@ def load_data():
         return default_data
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
-        if "about_story" not in data:
-            data["about_story"] = "नमस्ते दोस्तों! 🙏 मैं साहिल हूँ, बिहार से। मेरा लक्ष्य अपने देसी अंदाज, खांटी बिहारी कॉमेडी और रिलेटेबल लाइफ सिचुएशन्स से आप सभी के चेहरे पर मुस्कान लाना है। सपोर्ट करने के लिए दिल से धन्यवाद! ❤️"
+        if "milestones" not in data:
+            data["milestones"] = [
+                {"title": "100K+ Community", "desc": "Fast Growing", "icon": "fa-solid fa-users"},
+                {"title": "10M+ Video Views", "desc": "Viral Skits", "icon": "fa-solid fa-fire"},
+                {"title": "Top Bihar Creator", "desc": "Desi Comedy", "icon": "fa-solid fa-crown"}
+            ]
+        if "gallery" not in data:
+            data["gallery"] = [
+                {"title": "Shooting BTS 🎬", "url": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&auto=format&fit=crop&q=60"}
+            ]
+        block_ids = [b["id"] for b in data.get("blocks", [])]
+        if "milestones" not in block_ids:
+            data["blocks"].insert(1, {"id": "milestones", "name": "🏆 Milestones & Achievements", "enabled": True})
+        if "gallery" not in block_ids:
+            data["blocks"].insert(3, {"id": "gallery", "name": "📸 Photo Gallery & BTS Shots", "enabled": True})
         return data
 
 def save_data(data):
@@ -223,6 +247,40 @@ def admin_dashboard():
                 data["avatar_url"] = custom_url
                 
             save_data(data)
+
+        elif action == "add_milestone":
+            m_title = request.form.get("m_title")
+            m_desc = request.form.get("m_desc")
+            m_icon = request.form.get("m_icon", "fa-solid fa-award")
+            if "milestones" not in data: data["milestones"] = []
+            data["milestones"].append({"title": m_title, "desc": m_desc, "icon": m_icon})
+            save_data(data)
+
+        elif action == "delete_milestone":
+            idx = int(request.form.get("index"))
+            if "milestones" in data and 0 <= idx < len(data["milestones"]):
+                data["milestones"].pop(idx)
+                save_data(data)
+
+        elif action == "add_gallery_photo":
+            g_title = request.form.get("g_title")
+            photo_url = request.form.get("photo_url", "")
+            if 'photo_file' in request.files:
+                file = request.files['photo_file']
+                if file and file.filename != '':
+                    fname = secure_filename(file.filename)
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                    photo_url = f"/static/uploads/{fname}"
+            if photo_url:
+                if "gallery" not in data: data["gallery"] = []
+                data["gallery"].append({"title": g_title, "url": photo_url})
+                save_data(data)
+
+        elif action == "delete_gallery_photo":
+            idx = int(request.form.get("index"))
+            if "gallery" in data and 0 <= idx < len(data["gallery"]):
+                data["gallery"].pop(idx)
+                save_data(data)
 
         elif action == "update_poll":
             q = request.form.get("poll_question")

@@ -87,6 +87,72 @@
 
             <hr style="border-color: #28324a; margin: 25px 0;">
 
+            <!-- 🏆 MILESTONES MANAGEMENT -->
+            <h3 style="color: #fbbf24;">🏆 Milestone Badges</h3>
+            {% if data.milestones %}
+                {% for m in data.milestones %}
+                <div class="link-item">
+                    <div>
+                        <strong><i class="{{ m.icon }}"></i> {{ m.title }}</strong><br>
+                        <small style="color: #94a3b8;">{{ m.desc }}</small>
+                    </div>
+                    <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                        <input type="hidden" name="action" value="delete_milestone">
+                        <input type="hidden" name="index" value="{{ loop.index0 }}">
+                        <button type="submit" class="del-btn">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <h4 style="margin: 15px 0 8px; color: #94a3b8;">➕ Add New Milestone Badge</h4>
+            <form method="POST" action="/admin/dashboard">
+                <input type="hidden" name="action" value="add_milestone">
+                <input type="text" name="m_title" placeholder="Title (e.g. 50K YouTube Subs)" required>
+                <input type="text" name="m_desc" placeholder="Tagline (e.g. Completed)" required>
+                <select name="m_icon">
+                    <option value="fa-solid fa-crown">👑 Crown / Top Rank</option>
+                    <option value="fa-solid fa-users">👥 Community / Followers</option>
+                    <option value="fa-solid fa-fire">🔥 Viral / Views</option>
+                    <option value="fa-solid fa-award">🎖️ Award / Badge</option>
+                    <option value="fa-solid fa-play">▶️ Play Button</option>
+                </select>
+                <button type="submit" class="btn-main" style="background: #fbbf24; color: #000;">Add Milestone</button>
+            </form>
+
+            <hr style="border-color: #28324a; margin: 25px 0;">
+
+            <!-- 📸 PHOTO GALLERY -->
+            <h3 style="color: #38bdf8;">📸 Photo Gallery & BTS Shots</h3>
+            {% if data.gallery %}
+                {% for g in data.gallery %}
+                <div class="link-item">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img src="{{ g.url }}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
+                        <strong>{{ g.title }}</strong>
+                    </div>
+                    <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                        <input type="hidden" name="action" value="delete_gallery_photo">
+                        <input type="hidden" name="index" value="{{ loop.index0 }}">
+                        <button type="submit" class="del-btn">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <h4 style="margin: 15px 0 8px; color: #94a3b8;">➕ Add New Gallery Photo</h4>
+            <form method="POST" action="/admin/dashboard" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="add_gallery_photo">
+                <input type="text" name="g_title" placeholder="Caption (e.g. Shooting with Team 🎬)" required>
+                <input type="text" name="photo_url" placeholder="Or Image Web URL">
+                <div class="file-box">
+                    <input type="file" name="photo_file" accept="image/*" style="margin: 0; background: transparent; border: none;">
+                </div>
+                <button type="submit" class="btn-main" style="background: #0284c7;">Upload to Gallery</button>
+            </form>
+
+            <hr style="border-color: #28324a; margin: 25px 0;">
+
             <!-- ⚙️ SETTINGS -->
             <form method="POST" action="/admin/dashboard" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="update_profile">
@@ -131,7 +197,7 @@
                 <label>💬 WhatsApp Number</label>
                 <input type="text" name="whatsapp_num" value="{{ data.whatsapp_num }}">
 
-                <label>📁 Upload Photo (Gallery)</label>
+                <label>📁 Upload Profile Photo (Gallery)</label>
                 <div class="file-box">
                     <input type="file" name="avatar_file" accept="image/*" style="margin: 0; background: transparent; border: none;">
                 </div>
@@ -183,7 +249,7 @@
                 {% endfor %}
             {% endif %}
 
-            <h4 style="margin: 15px 0 8px; color: #94a3b8;">➕ Add New Review / Testimonial</h4>
+            <h4 style="margin: 15px 0 8px; color: #94a3b8;">➕ Add New Review</h4>
             <form method="POST" action="/admin/dashboard">
                 <input type="hidden" name="action" value="add_review">
                 <input type="text" name="rev_name" placeholder="Fan / Friend Name" required>
@@ -192,7 +258,7 @@
                     <option value="⭐⭐⭐⭐⭐">⭐⭐⭐⭐⭐ (5 Star)</option>
                     <option value="⭐⭐⭐⭐">⭐⭐⭐⭐ (4 Star)</option>
                 </select>
-                <button type="submit" class="btn-main" style="background: #f59e0b; color: #000; font-weight: 800;">Add Review</button>
+                <button type="submit" class="btn-main" style="background: #f59e0b; color: #000;">Add Review</button>
             </form>
 
             <hr style="border-color: #28324a; margin: 25px 0;">
