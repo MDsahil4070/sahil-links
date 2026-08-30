@@ -4,7 +4,7 @@ import os
 import re
 import random
 import urllib.request
-import urllib.error
+import urllib.parse
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -16,12 +16,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 DATA_FILE = os.path.join(BASE_DIR, "data.json")
-
-# 🔒 DUAL PERMANENT LOCKED SECURITY EMAILS
-SECURITY_EMAILS = [
-    "mdsahilkingboos@gmail.com",
-    "mdsahil3330z@gmail.com"
-]
 
 def extract_video_id(url):
     if not url: return None
@@ -42,6 +36,8 @@ def load_data():
             "admin_user": "admin",
             "admin_pass": "SahilPassword@590",
             "admin_pin": "590590",
+            "tg_bot_token": "",
+            "tg_chat_id": "",
             "total_views": 0,
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
@@ -127,6 +123,8 @@ def load_data():
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
         if "admin_pin" not in data: data["admin_pin"] = "590590"
+        if "tg_bot_token" not in data: data["tg_bot_token"] = ""
+        if "tg_chat_id" not in data: data["tg_chat_id"] = ""
         if "total_views" not in data: data["total_views"] = 0
         if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
         if "custom_themes" not in data: data["custom_themes"] = []
@@ -137,30 +135,31 @@ def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-def send_secure_email_api(to_email, otp_code):
+def send_telegram_otp(otp_code, data):
+    token = data.get("tg_bot_token", "").strip()
+    chat_id = data.get("tg_chat_id", "").strip()
+    
+    if not token or not chat_id:
+        return False, "⚠️ Telegram Bot Token या Chat ID सेट नहीं है! नीचे सेटिंग्स में भरें या Master PIN इस्तेमाल करें।"
+    
+    msg_text = f"🛡️ *Sahil.com 590 Security Alert*\n\n🔑 Your Security OTP: `{otp_code}`\n\n⏱️ यह कोड 10 मिनट के लिए मान्य है।"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = urllib.parse.urlencode({
+        "chat_id": chat_id,
+        "text": msg_text,
+        "parse_mode": "Markdown"
+    }).encode('utf-8')
+    
     try:
-        url = f"https://formsubmit.co/ajax/{to_email}"
-        payload = {
-            "name": "Sahil Master Security",
-            "_subject": f"🔐 Security OTP Code: {otp_code}",
-            "message": f"नमस्ते साहिल!\n\nSahil.com 590 एडमिन सुरक्षा OTP कोड:\n\n👉 {otp_code}\n\nयह कोड 10 मिनट के लिए मान्य है।",
-            "_captcha": "false",
-            "_template": "table"
-        }
-        data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(url, data=data, headers={
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-        })
-        with urllib.request.urlopen(req, timeout=12) as response:
-            res_json = json.loads(response.read().decode('utf-8'))
-            if res_json.get("success") == "true" or response.status == 200:
-                return True, f"✅ 6-Digit OTP कोड ({to_email}) पर भेज दिया गया है! कृपया इनबॉक्स या स्पैम (Spam) फोल्डर देखें।"
+        req = urllib.request.Request(url, data=payload)
+        with urllib.request.urlopen(req, timeout=8) as response:
+            res = json.loads(response.read().decode('utf-8'))
+            if res.get("ok"):
+                return True, "⚡ OTP आपके Telegram पर तुरंत भेज दिया गया है! Telegram चेक करें।"
             else:
-                return False, "⚠️ ईमेल भेजने में समस्या हुई। आप 6-Digit Master PIN का उपयोग कर सकते हैं।"
+                return False, f"⚠️ Telegram Error: {res.get('description')}"
     except Exception as e:
-        return False, f"⚠️ Email Error: {str(e)} (आप सीधे 6-Digit Master PIN से लॉगिन/सेव कर सकते हैं)"
+        return False, f"⚠️ Telegram Connection Error: {str(e)}"
 
 @app.route("/")
 def home():
@@ -217,19 +216,15 @@ def admin():
             session["logged_in"] = True
             return redirect(url_for("admin_dashboard"))
         else:
-            return render_template("admin.html", logged_in=False, data=data, emails=SECURITY_EMAILS, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
-    return render_template("admin.html", logged_in=False, data=data, emails=SECURITY_EMAILS)
+            return render_template("admin.html", logged_in=False, data=data, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
+    return render_template("admin.html", logged_in=False, data=data)
 
-@app.route("/admin/send_otp_ajax", methods=["POST"])
-def send_otp_ajax():
-    req_json = request.get_json(silent=True) or {}
-    chosen_idx = int(req_json.get("email_index", 0))
-    target_email = SECURITY_EMAILS[chosen_idx] if 0 <= chosen_idx < len(SECURITY_EMAILS) else SECURITY_EMAILS[0]
-    
+@app.route("/admin/send_tg_otp", methods=["POST"])
+def send_tg_otp():
+    data = load_data()
     otp = str(random.randint(100000, 999999))
     session["admin_security_otp"] = otp
-    
-    success, msg = send_secure_email_api(target_email, otp)
+    success, msg = send_telegram_otp(otp, data)
     return jsonify({"success": success, "msg": msg})
 
 @app.route("/admin/reset_password_otp", methods=["POST"])
@@ -256,7 +251,7 @@ def reset_password_otp():
         session["logged_in"] = True
         return redirect(url_for("admin_dashboard"))
     else:
-        return render_template("admin.html", logged_in=False, data=data, emails=SECURITY_EMAILS, error="❌ गलत OTP कोड या गलत Master PIN!")
+        return render_template("admin.html", logged_in=False, data=data, error="❌ गलत Telegram OTP या गलत Master PIN!")
 
 @app.route("/admin/download_backup")
 def download_backup():
@@ -294,10 +289,16 @@ def admin_dashboard():
                 if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
                 session.pop("admin_security_otp", None)
                 save_data(data)
-                method_used = "ईमेल OTP" if is_otp_valid else "Master PIN"
+                method_used = "Telegram OTP" if is_otp_valid else "Master PIN"
                 msg_status = f"✅ {method_used} सत्यापन सफल! यूजरनेम, पासवर्ड और PIN अपडेट हो गए!"
             else:
-                msg_status = "❌ गलत ईमेल OTP कोड या गलत Master PIN! बदलाव अस्वीकार कर दिया गया।"
+                msg_status = "❌ गलत Telegram OTP कोड या गलत Master PIN!"
+
+        elif action == "update_tg_settings":
+            data["tg_bot_token"] = request.form.get("tg_bot_token", "").strip()
+            data["tg_chat_id"] = request.form.get("tg_chat_id", "").strip()
+            save_data(data)
+            msg_status = "✅ Telegram Bot सेटिंग्स सुरक्षित हो गईं! अब OTP टेस्ट करें।"
 
         elif action == "restore_backup":
             if 'backup_file' in request.files:
@@ -530,9 +531,9 @@ def admin_dashboard():
             data["messages"] = []
             save_data(data)
 
-        return render_template("admin.html", logged_in=True, data=data, emails=SECURITY_EMAILS, total_link_clicks=total_link_clicks, msg_status=msg_status)
+        return render_template("admin.html", logged_in=True, data=data, total_link_clicks=total_link_clicks, msg_status=msg_status)
 
-    return render_template("admin.html", logged_in=True, data=data, emails=SECURITY_EMAILS, total_link_clicks=total_link_clicks)
+    return render_template("admin.html", logged_in=True, data=data, total_link_clicks=total_link_clicks)
 
 @app.route("/logout")
 def logout():
