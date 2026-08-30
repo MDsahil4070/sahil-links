@@ -38,6 +38,8 @@ def load_data():
             "admin_pin": "590590",
             "tg_bot_token": "",
             "tg_chat_id": "",
+            "tg_bot_token_2": "",
+            "tg_chat_id_2": "",
             "total_views": 0,
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
@@ -125,6 +127,8 @@ def load_data():
         if "admin_pin" not in data: data["admin_pin"] = "590590"
         if "tg_bot_token" not in data: data["tg_bot_token"] = ""
         if "tg_chat_id" not in data: data["tg_chat_id"] = ""
+        if "tg_bot_token_2" not in data: data["tg_bot_token_2"] = ""
+        if "tg_chat_id_2" not in data: data["tg_chat_id_2"] = ""
         if "total_views" not in data: data["total_views"] = 0
         if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
         if "custom_themes" not in data: data["custom_themes"] = []
@@ -135,14 +139,11 @@ def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-def send_telegram_otp(otp_code, data):
-    token = data.get("tg_bot_token", "").strip()
-    chat_id = data.get("tg_chat_id", "").strip()
-    
+def send_single_tg_message(token, chat_id, otp_code, bot_name="Telegram Bot"):
     if not token or not chat_id:
-        return False, "⚠️ Telegram Bot Token या Chat ID सेट नहीं है! नीचे सेटिंग्स में भरें या Master PIN इस्तेमाल करें।"
+        return False, f"⚠️ {bot_name} Token या Chat ID सेट नहीं है!"
     
-    msg_text = f"🛡️ *Sahil.com 590 Security Alert*\n\n🔑 Your Security OTP: `{otp_code}`\n\n⏱️ यह कोड 10 मिनट के लिए मान्य है।"
+    msg_text = f"🛡️ *Sahil.com 590 Security Alert*\n\n🔑 Your Security OTP: `{otp_code}`\n\n⏱️ यह कोड 10 मिनट के लिए मान्य है।\n🤖 Delivered via: {bot_name}"
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = urllib.parse.urlencode({
         "chat_id": chat_id,
@@ -155,11 +156,34 @@ def send_telegram_otp(otp_code, data):
         with urllib.request.urlopen(req, timeout=8) as response:
             res = json.loads(response.read().decode('utf-8'))
             if res.get("ok"):
-                return True, "⚡ OTP आपके Telegram पर तुरंत भेज दिया गया है! Telegram चेक करें।"
+                return True, f"⚡ OTP {bot_name} पर सफलतापूर्वक भेज दिया गया है!"
             else:
-                return False, f"⚠️ Telegram Error: {res.get('description')}"
+                return False, f"⚠️ {bot_name} Error: {res.get('description')}"
     except Exception as e:
-        return False, f"⚠️ Telegram Connection Error: {str(e)}"
+        return False, f"⚠️ {bot_name} Network Error: {str(e)}"
+
+def send_telegram_otp(otp_code, data, bot_choice="auto"):
+    token1 = data.get("tg_bot_token", "").strip()
+    chat1 = data.get("tg_chat_id", "").strip()
+    token2 = data.get("tg_bot_token_2", "").strip()
+    chat2 = data.get("tg_chat_id_2", "").strip()
+    
+    if bot_choice == "bot1":
+        return send_single_tg_message(token1, chat1, otp_code, "Primary Bot 1")
+    elif bot_choice == "bot2":
+        return send_single_tg_message(token2, chat2, otp_code, "Backup Bot 2")
+    else: # auto / both
+        success1, msg1 = send_single_tg_message(token1, chat1, otp_code, "Primary Bot 1")
+        success2, msg2 = send_single_tg_message(token2, chat2, otp_code, "Backup Bot 2")
+        
+        if success1 and success2:
+            return True, "⚡ OTP दोनों Telegram बॉट्स (Bot 1 & Bot 2) पर भेज दिया गया है!"
+        elif success1:
+            return True, "⚡ OTP Telegram Primary Bot 1 पर भेज दिया गया है!"
+        elif success2:
+            return True, "⚡ OTP Telegram Backup Bot 2 पर भेज दिया गया है!"
+        else:
+            return False, f"⚠️ {msg1} | {msg2} (कृपया नीचे बॉट टोकन सेट करें या Master PIN का उपयोग करें)"
 
 @app.route("/")
 def home():
@@ -222,27 +246,26 @@ def admin():
 @app.route("/admin/send_tg_otp", methods=["POST"])
 def send_tg_otp():
     data = load_data()
+    req_json = request.get_json(silent=True) or {}
+    bot_choice = req_json.get("bot_choice", "auto")
+    
     otp = str(random.randint(100000, 999999))
     session["admin_security_otp"] = otp
-    success, msg = send_telegram_otp(otp, data)
+    success, msg = send_telegram_otp(otp, data, bot_choice)
     return jsonify({"success": success, "msg": msg})
 
 @app.route("/admin/reset_password_otp", methods=["POST"])
 def reset_password_otp():
     data = load_data()
     entered_otp = request.form.get("reset_otp", "").strip()
-    master_pin_input = request.form.get("current_master_pin", "").strip()
     new_user = request.form.get("reset_user", "").strip()
     new_pass = request.form.get("reset_pass", "").strip()
     new_pin = request.form.get("reset_pin", "").strip()
     
     saved_otp = session.get("admin_security_otp")
-    master_pin = data.get("admin_pin", "590590")
     
-    is_otp_valid = bool(saved_otp and entered_otp and entered_otp == saved_otp)
-    is_pin_valid = bool(master_pin_input and master_pin_input == master_pin)
-    
-    if is_otp_valid or is_pin_valid:
+    # 100% Reset via Telegram OTP (No old master PIN needed at all!)
+    if saved_otp and entered_otp == saved_otp:
         if new_user: data["admin_user"] = new_user
         if new_pass: data["admin_pass"] = new_pass
         if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
@@ -251,7 +274,7 @@ def reset_password_otp():
         session["logged_in"] = True
         return redirect(url_for("admin_dashboard"))
     else:
-        return render_template("admin.html", logged_in=False, data=data, error="❌ गलत Telegram OTP या गलत Master PIN!")
+        return render_template("admin.html", logged_in=False, data=data, error="❌ गलत Telegram OTP कोड! रीसेट विफल हुआ।")
 
 @app.route("/admin/download_backup")
 def download_backup():
@@ -297,8 +320,10 @@ def admin_dashboard():
         elif action == "update_tg_settings":
             data["tg_bot_token"] = request.form.get("tg_bot_token", "").strip()
             data["tg_chat_id"] = request.form.get("tg_chat_id", "").strip()
+            data["tg_bot_token_2"] = request.form.get("tg_bot_token_2", "").strip()
+            data["tg_chat_id_2"] = request.form.get("tg_chat_id_2", "").strip()
             save_data(data)
-            msg_status = "✅ Telegram Bot सेटिंग्स सुरक्षित हो गईं! अब OTP टेस्ट करें।"
+            msg_status = "✅ दोनों Telegram Bots सेटिंग्स सुरक्षित हो गईं!"
 
         elif action == "restore_backup":
             if 'backup_file' in request.files:
