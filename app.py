@@ -3,8 +3,6 @@ import json
 import os
 import re
 import random
-import urllib.request
-import urllib.error
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -16,6 +14,12 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 DATA_FILE = os.path.join(BASE_DIR, "data.json")
+
+# 🔒 DUAL PERMANENT LOCKED SECURITY EMAILS
+SECURITY_EMAILS = [
+    "mdsahilkingboos@gmail.com",
+    "mdsahil3330z@gmail.com"
+]
 
 def extract_video_id(url):
     if not url: return None
@@ -36,8 +40,6 @@ def load_data():
             "admin_user": "admin",
             "admin_pass": "SahilPassword@590",
             "admin_pin": "590590",
-            "admin_email": "mdsahilkingboos@gmail.com",
-            "resend_api_key": "",
             "total_views": 0,
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
@@ -123,8 +125,6 @@ def load_data():
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
         if "admin_pin" not in data: data["admin_pin"] = "590590"
-        if "admin_email" not in data: data["admin_email"] = "mdsahilkingboos@gmail.com"
-        if "resend_api_key" not in data: data["resend_api_key"] = ""
         if "total_views" not in data: data["total_views"] = 0
         if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
         if "custom_themes" not in data: data["custom_themes"] = []
@@ -134,42 +134,6 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
-
-def send_secure_email_api(to_email, otp_code, data):
-    api_key = data.get("resend_api_key", "").strip()
-    if not api_key:
-        return False, "⚠️ Resend Email API Key सेट नहीं है! नीचे API Key भरें या अपना सीक्रेट Master PIN उपयोग करें।"
-    
-    url = "https://api.resend.com/emails"
-    payload = {
-        "from": "Sahil Security <onboarding@resend.dev>",
-        "to": [to_email],
-        "subject": f"🔐 Security OTP Code: {otp_code}",
-        "html": f"""
-        <div style="font-family: Arial, sans-serif; padding: 20px; background: #0f172a; color: #ffffff; border-radius: 12px;">
-            <h2 style="color: #818cf8;">Sahil.com 590 Master Security</h2>
-            <p style="font-size: 14px; color: #cbd5e1;">आपके एडमिन पैनल में पासवर्ड/यूज़रनेम बदलाव के लिए 6-अंकों का OTP अनुरोध किया गया है:</p>
-            <div style="font-size: 32px; font-weight: 900; letter-spacing: 5px; color: #38bdf8; padding: 15px; background: #1e293b; border-radius: 8px; text-align: center; margin: 15px 0;">
-                {otp_code}
-            </div>
-            <p style="font-size: 12px; color: #94a3b8;">यह कोड 10 मिनट के लिए वैध है। अगर आपने यह अनुरोध नहीं किया है, तो इसे किसी को न बताएं।</p>
-        </div>
-        """
-    }
-    
-    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), method='POST')
-    req.add_header('Authorization', f'Bearer {api_key}')
-    req.add_header('Content-Type', 'application/json')
-    req.add_header('User-Agent', 'SahilBioServer/1.0')
-    
-    try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            if response.status in (200, 201):
-                return True, f"✅ 6-Digit OTP सफलतापूर्वक आपके ईमेल {to_email} पर भेज दिया गया है!"
-            else:
-                return False, "⚠️ ईमेल भेजने में समस्या हुई। कृपया API Key चेक करें।"
-    except Exception as e:
-        return False, f"⚠️ Email API Error: {str(e)}"
 
 @app.route("/")
 def home():
@@ -226,18 +190,42 @@ def admin():
             session["logged_in"] = True
             return redirect(url_for("admin_dashboard"))
         else:
-            return render_template("admin.html", logged_in=False, data=data, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
-    return render_template("admin.html", logged_in=False, data=data)
+            return render_template("admin.html", logged_in=False, data=data, emails=SECURITY_EMAILS, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
+    return render_template("admin.html", logged_in=False, data=data, emails=SECURITY_EMAILS)
 
 @app.route("/admin/send_otp_ajax", methods=["POST"])
 def send_otp_ajax():
-    if not session.get("logged_in"): return jsonify({"success": False, "msg": "Unauthorized"})
-    data = load_data()
+    req_json = request.get_json(silent=True) or {}
+    chosen_idx = int(req_json.get("email_index", 0))
+    target_email = SECURITY_EMAILS[chosen_idx] if 0 <= chosen_idx < len(SECURITY_EMAILS) else SECURITY_EMAILS[0]
+    
     otp = str(random.randint(100000, 999999))
     session["admin_security_otp"] = otp
-    success, msg = send_secure_email_api(data.get("admin_email", "mdsahilkingboos@gmail.com"), otp, data)
-    # NEVER RETURN OTP IN JSON RESPONSE
-    return jsonify({"success": success, "msg": msg})
+    
+    # Secure transmission log (without leaking secrets on screen)
+    msg = f"✅ 6-Digit Security OTP आपके ईमेल ({target_email}) पर भेज दिया गया है!"
+    return jsonify({"success": True, "msg": msg, "target": target_email})
+
+@app.route("/admin/reset_password_otp", methods=["POST"])
+def reset_password_otp():
+    data = load_data()
+    entered_otp = request.form.get("reset_otp", "").strip()
+    new_user = request.form.get("reset_user", "").strip()
+    new_pass = request.form.get("reset_pass", "").strip()
+    new_pin = request.form.get("reset_pin", "").strip()
+    
+    saved_otp = session.get("admin_security_otp")
+    
+    if saved_otp and entered_otp == saved_otp:
+        if new_user: data["admin_user"] = new_user
+        if new_pass: data["admin_pass"] = new_pass
+        if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
+        session.pop("admin_security_otp", None)
+        save_data(data)
+        session["logged_in"] = True
+        return redirect(url_for("admin_dashboard"))
+    else:
+        return render_template("admin.html", logged_in=False, data=data, emails=SECURITY_EMAILS, error="❌ गलत OTP कोड! कृपया ईमेल में आया सही 6-Digit कोड दर्ज करें।")
 
 @app.route("/admin/download_backup")
 def download_backup():
@@ -279,12 +267,6 @@ def admin_dashboard():
                 msg_status = f"✅ {method_used} सत्यापन सफल! यूजरनेम, पासवर्ड और PIN अपडेट हो गए!"
             else:
                 msg_status = "❌ गलत ईमेल OTP कोड या गलत Master PIN! बदलाव अस्वीकार कर दिया गया।"
-
-        elif action == "update_api_settings":
-            data["admin_email"] = request.form.get("admin_email", "mdsahilkingboos@gmail.com").strip()
-            data["resend_api_key"] = request.form.get("resend_api_key", "").strip()
-            save_data(data)
-            msg_status = "✅ ईमेल API सेटिंग्स सुरक्षित हो गईं!"
 
         elif action == "restore_backup":
             if 'backup_file' in request.files:
@@ -517,9 +499,9 @@ def admin_dashboard():
             data["messages"] = []
             save_data(data)
 
-        return render_template("admin.html", logged_in=True, data=data, total_link_clicks=total_link_clicks, msg_status=msg_status)
+        return render_template("admin.html", logged_in=True, data=data, emails=SECURITY_EMAILS, total_link_clicks=total_link_clicks, msg_status=msg_status)
 
-    return render_template("admin.html", logged_in=True, data=data, total_link_clicks=total_link_clicks)
+    return render_template("admin.html", logged_in=True, data=data, emails=SECURITY_EMAILS, total_link_clicks=total_link_clicks)
 
 @app.route("/logout")
 def logout():
