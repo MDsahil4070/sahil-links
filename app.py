@@ -38,7 +38,7 @@ def load_data():
             "admin_pass": "SahilPassword@590",
             "admin_pin": "590590",
             "admin_email": "mdsahilkingboos@gmail.com",
-            "smtp_email": "",
+            "smtp_email": "mdsahilkingboos@gmail.com",
             "smtp_app_pass": "",
             "total_views": 0,
             "title": "Sahil.com 590",
@@ -126,7 +126,7 @@ def load_data():
         data = json.load(f)
         if "admin_pin" not in data: data["admin_pin"] = "590590"
         if "admin_email" not in data: data["admin_email"] = "mdsahilkingboos@gmail.com"
-        if "smtp_email" not in data: data["smtp_email"] = ""
+        if "smtp_email" not in data: data["smtp_email"] = "mdsahilkingboos@gmail.com"
         if "smtp_app_pass" not in data: data["smtp_app_pass"] = ""
         if "total_views" not in data: data["total_views"] = 0
         if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
@@ -139,29 +139,29 @@ def save_data(data):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 def send_otp_email(to_email, otp_code, data):
-    smtp_user = data.get("smtp_email") or to_email
-    smtp_pass = data.get("smtp_app_pass")
+    smtp_user = (data.get("smtp_email") or to_email).strip()
+    smtp_pass = data.get("smtp_app_pass", "").replace(" ", "").strip()
     
     if not smtp_pass:
-        return False, "⚠️ SMTP पासवर्ड सेट नहीं है! आप नीचे सीधे 6-Digit Master PIN डालकर सेव कर सकते हैं।"
+        return False, "⚠️ Gmail App Password नहीं मिला! नीचे 'Configure Gmail SMTP' में 16-अक्षर का App Password डालें।"
     
     try:
         msg = MIMEMultipart()
-        msg['From'] = f"Sahil Bio Security <{smtp_user}>"
+        msg['From'] = f"Sahil Security <{smtp_user}>"
         msg['To'] = to_email
         msg['Subject'] = f"🔐 Your Security OTP: {otp_code}"
         
-        body = f"नमस्ते साहिल!\n\nआपके एडमिन पैनल में सुरक्षा बदलाव के लिए OTP:\n\n🔑 OTP Code: {otp_code}\n\nधन्यवाद!"
+        body = f"नमस्ते साहिल!\n\nआपके एडमिन पैनल (Sahil.com 590) का सुरक्षा OTP:\n\n👉 {otp_code}\n\nयह कोड 10 मिनट के लिए मान्य है।\nयदि आपको Master PIN याद नहीं है, तो सिर्फ यह OTP डालकर आप नया पासवर्ड व PIN बना सकते हैं।"
         msg.attach(MIMEText(body, 'plain'))
         
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=12)
         server.starttls()
         server.login(smtp_user, smtp_pass)
         server.sendmail(smtp_user, to_email, msg.as_string())
         server.quit()
-        return True, "✅ OTP सफलतापूर्वक आपके ईमेल पर भेजा गया!"
+        return True, f"✅ OTP ईमेल {to_email} पर भेज दिया गया है! कृपया इनबॉक्स या स्पैम फोल्डर चेक करें।"
     except Exception as e:
-        return False, f"⚠️ Email Error: सीधे 6-Digit Master PIN का उपयोग करें।"
+        return False, f"⚠️ Gmail Error: {str(e)} (कृपया चेक करें कि 16-अक्षर का Google App Password सही है)"
 
 @app.route("/")
 def home():
@@ -257,24 +257,27 @@ def admin_dashboard():
             saved_otp = session.get("admin_security_otp")
             master_pin = data.get("admin_pin", "590590")
             
-            is_verified = (saved_otp and entered_otp == saved_otp) or (entered_pin == master_pin)
+            # Key change: Can verify either via OTP alone OR Master PIN alone
+            is_otp_valid = bool(saved_otp and entered_otp and entered_otp == saved_otp)
+            is_pin_valid = bool(entered_pin and entered_pin == master_pin)
             
-            if is_verified:
+            if is_otp_valid or is_pin_valid:
                 if new_u: data["admin_user"] = new_u
                 if new_p: data["admin_pass"] = new_p
                 if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
                 session.pop("admin_security_otp", None)
                 save_data(data)
-                msg_status = "✅ यूजरनेम, पासवर्ड और PIN सफलतापूर्वक बदल दिया गया!"
+                method_used = "ईमेल OTP" if is_otp_valid else "Master PIN"
+                msg_status = f"✅ {method_used} सत्यापन सफल! यूजरनेम, पासवर्ड और PIN अपडेट हो गए!"
             else:
-                msg_status = "❌ गलत Master PIN या गलत OTP! बदलाव नहीं हुआ।"
+                msg_status = "❌ सत्यापन विफल! कृपया ईमेल पर आया 6-Digit OTP कोड या अपना 6-Digit Master PIN दर्ज करें।"
 
         elif action == "update_smtp_settings":
             data["admin_email"] = request.form.get("admin_email", "mdsahilkingboos@gmail.com").strip()
             data["smtp_email"] = request.form.get("smtp_email", "").strip()
-            data["smtp_app_pass"] = request.form.get("smtp_app_pass", "").strip()
+            data["smtp_app_pass"] = request.form.get("smtp_app_pass", "").replace(" ", "").strip()
             save_data(data)
-            msg_status = "✅ ईमेल सेटिंग्स सुरक्षित हो गईं!"
+            msg_status = "✅ Gmail SMTP पासवर्ड सेव हो गया! अब ऊपर दिए बटन से ईमेल पर OTP भेजें।"
 
         elif action == "restore_backup":
             if 'backup_file' in request.files:
