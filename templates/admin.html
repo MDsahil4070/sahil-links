@@ -72,6 +72,7 @@
                 <a href="/logout" style="color: #ef4444; font-weight: 700; text-decoration: none;">Logout</a>
             </div>
 
+            <div id="live-alert-box" style="display:none;" class="alert-box"></div>
             {% if msg_status %}
             <div class="alert-box">{{ msg_status }}</div>
             {% endif %}
@@ -79,16 +80,14 @@
             <!-- 🔐 2-FACTOR OTP & MASTER PIN CREDENTIALS CHANGE -->
             <div style="background: rgba(99, 102, 241, 0.12); border: 2px solid rgba(99, 102, 241, 0.4); padding: 18px; border-radius: 18px; margin-bottom: 25px;">
                 <h3 style="color: #a5b4fc; margin-bottom: 6px;"><i class="fa-solid fa-shield-halved"></i> 🛡️ 2-Factor OTP & PIN Security Control</h3>
-                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 14px;">यूजरनेम, पासवर्ड या 6-Digit PIN बदलने के लिए ईमेल OTP या मौजूदा Master PIN दर्ज करना अनिवार्य है।</p>
+                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 14px;">सुरक्षा के लिए 6-Digit Master PIN या ईमेल OTP दर्ज करके नया पासवर्ड/यूज़रनेम सेव करें।</p>
 
-                <form method="POST" action="/admin/dashboard" style="margin-bottom: 15px;">
-                    <input type="hidden" name="action" value="send_email_otp">
-                    <button type="submit" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 800; border: none; padding: 10px 14px; border-radius: 10px; width: 100%; cursor: pointer; font-size: 13px;">
-                        📩 Send 6-Digit Security OTP to: {{ data.admin_email }}
-                    </button>
-                </form>
+                <!-- NO-REFRESH AJAX OTP BUTTON -->
+                <button type="button" onclick="sendOtpAjax()" id="otp-btn" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 800; border: none; padding: 10px 14px; border-radius: 10px; width: 100%; cursor: pointer; font-size: 13px; margin-bottom: 15px;">
+                    📩 Send 6-Digit Security OTP to Email
+                </button>
 
-                <form method="POST" action="/admin/dashboard">
+                <form method="POST" action="/admin/dashboard" id="security-form">
                     <input type="hidden" name="action" value="update_security_credentials">
                     
                     <label>New Admin Username</label>
@@ -102,29 +101,28 @@
 
                     <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
                     
-                    <label style="color: #38bdf8;">🔑 Enter Email OTP (If Sent):</label>
-                    <input type="text" name="otp_code" placeholder="Enter 6-Digit OTP from Email">
+                    <label style="color: #fbbf24;">🔐 Enter Current 6-Digit Master PIN (Direct Save):</label>
+                    <input type="password" name="current_pin" id="current_pin_input" placeholder="Enter 6-Digit Master PIN" maxlength="6">
 
-                    <label style="color: #fbbf24;">🔐 OR Enter Current 6-Digit Master PIN:</label>
-                    <input type="password" name="current_pin" placeholder="Enter Current 6-Digit Master PIN" maxlength="6">
+                    <label style="color: #38bdf8;">🔑 OR Enter Email OTP Code (If Received):</label>
+                    <input type="text" name="otp_code" placeholder="Enter 6-Digit OTP from Email">
 
                     <button type="submit" class="btn-main" style="background: #4f46e5;">Verify & Save Security Details 🚀</button>
                 </form>
 
                 <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 10px;">
                     <details>
-                        <summary style="font-size: 12.5px; color: #a5b4fc; cursor: pointer; font-weight: 700;">⚙️ Configure Gmail SMTP App Password (For Live Email Delivery)</summary>
+                        <summary style="font-size: 12.5px; color: #a5b4fc; cursor: pointer; font-weight: 700;">⚙️ Configure Gmail SMTP App Password (Optional for Live Emails)</summary>
                         <form method="POST" action="/admin/dashboard" style="margin-top: 10px;">
                             <input type="hidden" name="action" value="update_smtp_settings">
-                            <label style="font-size: 12px;">Admin Email (Receiving OTP)</label>
+                            <label style="font-size: 12px;">Admin Email</label>
                             <input type="email" name="admin_email" value="{{ data.admin_email }}" required>
                             
                             <label style="font-size: 12px;">Sender Gmail Address</label>
                             <input type="email" name="smtp_email" value="{{ data.smtp_email }}" placeholder="mdsahilkingboos@gmail.com">
 
                             <label style="font-size: 12px;">Google 16-Digit App Password</label>
-                            <input type="password" name="smtp_app_pass" value="{{ data.smtp_app_pass }}" placeholder="16-digit Google App Password">
-                            <small style="color: #64748b; display: block; margin-bottom: 10px; font-size: 11px;">Google Account -> Security -> 2-Step Verification -> App Passwords से 16 डिजिट का कोड बनाएं।</small>
+                            <input type="password" name="smtp_app_pass" value="{{ data.smtp_app_pass }}" placeholder="16-digit App Password">
 
                             <button type="submit" class="btn-main" style="background: #334155; padding: 8px; font-size: 12px;">Save SMTP Settings</button>
                         </form>
@@ -606,5 +604,32 @@
             {% endfor %}
         {% endif %}
     </div>
+
+    <script>
+        function sendOtpAjax() {
+            const btn = document.getElementById('otp-btn');
+            const alertBox = document.getElementById('live-alert-box');
+            btn.innerText = "⏳ Sending OTP... Please wait...";
+            btn.disabled = true;
+
+            fetch('/admin/send_otp_ajax', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                alertBox.style.display = 'block';
+                alertBox.innerText = data.msg;
+                btn.innerText = "📩 Send OTP Again";
+                btn.disabled = false;
+            })
+            .catch(err => {
+                alertBox.style.display = 'block';
+                alertBox.innerText = "⚠️ सीधे 6-Digit Master PIN डालकर सेव करें!";
+                btn.innerText = "📩 Send 6-Digit Security OTP to Email";
+                btn.disabled = false;
+            });
+        }
+    </script>
 </body>
 </html>

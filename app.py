@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, send_file, jsonify
 import json
 import os
 import re
@@ -143,7 +143,7 @@ def send_otp_email(to_email, otp_code, data):
     smtp_pass = data.get("smtp_app_pass")
     
     if not smtp_pass:
-        return False, "Gmail 16-Digit App Password कॉन्फ़िगर नहीं है! नीचे Master PIN का इस्तेमाल करें।"
+        return False, "⚠️ SMTP पासवर्ड सेट नहीं है! आप नीचे सीधे 6-Digit Master PIN डालकर सेव कर सकते हैं।"
     
     try:
         msg = MIMEMultipart()
@@ -151,28 +151,17 @@ def send_otp_email(to_email, otp_code, data):
         msg['To'] = to_email
         msg['Subject'] = f"🔐 Your Security OTP: {otp_code}"
         
-        body = f"""
-        नमस्ते साहिल!
-        
-        आपके एडमिन पैनल (Sahil.com 590) में सुरक्षा बदलाव के लिए OTP अनुरोध किया गया है:
-        
-        🔑 OTP Code: {otp_code}
-        
-        यह कोड 10 मिनट के लिए मान्य है। यदि आपने यह अनुरोध नहीं किया है, तो कृपया इसे किसी के साथ साझा न करें।
-        
-        धन्यवाद,
-        Sahil.com 590 Master Security
-        """
+        body = f"नमस्ते साहिल!\n\nआपके एडमिन पैनल में सुरक्षा बदलाव के लिए OTP:\n\n🔑 OTP Code: {otp_code}\n\nधन्यवाद!"
         msg.attach(MIMEText(body, 'plain'))
         
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
         server.starttls()
         server.login(smtp_user, smtp_pass)
         server.sendmail(smtp_user, to_email, msg.as_string())
         server.quit()
-        return True, "✅ OTP आपके ईमेल पर भेज दिया गया है!"
+        return True, "✅ OTP सफलतापूर्वक आपके ईमेल पर भेजा गया!"
     except Exception as e:
-        return False, f"Email Error: {str(e)} (आप सीधे 6-Digit PIN का इस्तेमाल कर सकते हैं)"
+        return False, f"⚠️ Email Error: सीधे 6-Digit Master PIN का उपयोग करें।"
 
 @app.route("/")
 def home():
@@ -225,13 +214,21 @@ def admin():
         pwd = request.form.get("password")
         pin = request.form.get("emergency_pin")
         
-        # Regular login OR Master 6-Digit PIN recovery login
         if (user == data.get("admin_user", "admin") and pwd == data.get("admin_pass", "SahilPassword@590")) or (pin and pin == data.get("admin_pin", "590590")):
             session["logged_in"] = True
             return redirect(url_for("admin_dashboard"))
         else:
             return render_template("admin.html", logged_in=False, data=data, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
     return render_template("admin.html", logged_in=False, data=data)
+
+@app.route("/admin/send_otp_ajax", methods=["POST"])
+def send_otp_ajax():
+    if not session.get("logged_in"): return jsonify({"success": False, "msg": "Unauthorized"})
+    data = load_data()
+    otp = str(random.randint(100000, 999999))
+    session["admin_security_otp"] = otp
+    success, msg = send_otp_email(data.get("admin_email", "mdsahilkingboos@gmail.com"), otp, data)
+    return jsonify({"success": success, "msg": msg})
 
 @app.route("/admin/download_backup")
 def download_backup():
@@ -249,14 +246,8 @@ def admin_dashboard():
     
     if request.method == "POST":
         action = request.form.get("action")
-        
-        if action == "send_email_otp":
-            otp = str(random.randint(100000, 999999))
-            session["admin_security_otp"] = otp
-            success, message = send_otp_email(data.get("admin_email", "mdsahilkingboos@gmail.com"), otp, data)
-            msg_status = message
 
-        elif action == "update_security_credentials":
+        if action == "update_security_credentials":
             new_u = request.form.get("new_username", "").strip()
             new_p = request.form.get("new_password", "").strip()
             new_pin = request.form.get("new_pin", "").strip()
@@ -266,7 +257,6 @@ def admin_dashboard():
             saved_otp = session.get("admin_security_otp")
             master_pin = data.get("admin_pin", "590590")
             
-            # Security verification: Verified if entered valid OTP OR entered correct current Master PIN
             is_verified = (saved_otp and entered_otp == saved_otp) or (entered_pin == master_pin)
             
             if is_verified:
@@ -275,16 +265,16 @@ def admin_dashboard():
                 if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
                 session.pop("admin_security_otp", None)
                 save_data(data)
-                msg_status = "✅ सुरक्षा सत्यापन सफल! यूजरनेम, पासवर्ड और PIN अपडेट हो गए!"
+                msg_status = "✅ यूजरनेम, पासवर्ड और PIN सफलतापूर्वक बदल दिया गया!"
             else:
-                msg_status = "❌ गलत OTP कोड या गलत 6-Digit Master PIN! बदलाव अस्वीकार कर दिया गया।"
+                msg_status = "❌ गलत Master PIN या गलत OTP! बदलाव नहीं हुआ।"
 
         elif action == "update_smtp_settings":
             data["admin_email"] = request.form.get("admin_email", "mdsahilkingboos@gmail.com").strip()
             data["smtp_email"] = request.form.get("smtp_email", "").strip()
             data["smtp_app_pass"] = request.form.get("smtp_app_pass", "").strip()
             save_data(data)
-            msg_status = "✅ ईमेल और SMTP सेटिंग्स सुरक्षित हो गईं!"
+            msg_status = "✅ ईमेल सेटिंग्स सुरक्षित हो गईं!"
 
         elif action == "restore_backup":
             if 'backup_file' in request.files:
