@@ -66,11 +66,11 @@
                 <button type="submit" class="btn-main" style="background: #ef4444;">Direct Master PIN Login ⚡</button>
             </form>
 
-            <!-- 🔑 FORGOT PASSWORD / RESET VIA EMAIL OTP -->
+            <!-- 🔑 FORGOT PASSWORD / RESET VIA EMAIL OTP OR MASTER PIN -->
             <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.3); padding: 14px; border-radius: 14px;">
                 <details>
                     <summary style="color: #38bdf8; font-weight: 800; cursor: pointer; font-size: 13.5px; text-align: center;">
-                        ❓ Forgot Password or PIN? Reset via Email OTP
+                        ❓ Forgot Password? Reset via Email OTP or PIN
                     </summary>
                     <div style="margin-top: 12px;">
                         <label style="font-size: 12px;">Select Email to Receive OTP:</label>
@@ -86,8 +86,11 @@
                         <div id="login-alert-box" style="display:none;" class="alert-box"></div>
 
                         <form method="POST" action="/admin/reset_password_otp">
-                            <label style="font-size: 12px; color: #fbbf24;">Enter 6-Digit OTP from Email</label>
-                            <input type="text" name="reset_otp" placeholder="6-Digit OTP" required>
+                            <label style="font-size: 12px; color: #38bdf8;">Enter 6-Digit OTP from Email:</label>
+                            <input type="text" name="reset_otp" placeholder="Enter 6-Digit OTP from Email">
+
+                            <label style="font-size: 12px; color: #fbbf24;">OR Enter Current Master PIN (अगर OTP न आया हो):</label>
+                            <input type="password" name="current_master_pin" placeholder="Current 6-Digit Master PIN" maxlength="6">
 
                             <label style="font-size: 12px;">New Username</label>
                             <input type="text" name="reset_user" placeholder="New Username" required>
@@ -118,12 +121,12 @@
             <!-- 🔐 DUAL EMAIL OTP & MASTER PIN CREDENTIALS CHANGE -->
             <div style="background: rgba(99, 102, 241, 0.12); border: 2px solid rgba(99, 102, 241, 0.4); padding: 18px; border-radius: 18px; margin-bottom: 25px;">
                 <h3 style="color: #a5b4fc; margin-bottom: 6px;"><i class="fa-solid fa-shield-halved"></i> 🛡️ 2-Factor OTP & PIN Security Control</h3>
-                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">🔐 Locked Emails: <b>{{ emails[0] }}</b> | <b>{{ emails[1] }}</b></p>
+                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">सुरक्षित ईमेल: <b style="color: #38bdf8;">{{ emails[0] }}</b> | <b style="color: #38bdf8;">{{ emails[1] }}</b></p>
 
                 <label style="font-size: 12px;">Select Email to Send OTP:</label>
                 <select id="dash-email-select" style="margin-bottom: 10px;">
-                    <option value="0">📧 Primary Email: {{ emails[0] }}</option>
-                    <option value="1">📧 Backup Email: {{ emails[1] }}</option>
+                    <option value="0">📧 Primary: {{ emails[0] }}</option>
+                    <option value="1">📧 Backup: {{ emails[1] }}</option>
                 </select>
 
                 <button type="button" onclick="sendOtpAjax()" id="otp-btn" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 800; border: none; padding: 12px 14px; border-radius: 10px; width: 100%; cursor: pointer; font-size: 13.5px; margin-bottom: 15px;">
@@ -652,8 +655,8 @@
             })
             .catch(err => {
                 alertBox.style.display = 'block';
-                alertBox.innerText = "⚠️ OTP भेजा गया! कृपया अपना ईमेल इनबॉक्स चेक करें।";
-                btn.innerText = "📩 Send 6-Digit OTP Again";
+                alertBox.innerText = "⚠️ अनुरोध पूरा नहीं हुआ। कृपया Master PIN का उपयोग करें।";
+                btn.innerText = "📩 Send 6-Digit OTP to Selected Email";
                 btn.disabled = false;
             });
         }
@@ -680,8 +683,8 @@
             })
             .catch(err => {
                 alertBox.style.display = 'block';
-                alertBox.innerText = "⚠️ OTP भेजा गया! कृपया अपना ईमेल इनबॉक्स चेक करें।";
-                btn.innerText = "📩 Send Reset OTP";
+                alertBox.innerText = "⚠️ अनुरोध पूरा नहीं हुआ। कृपया Master PIN का उपयोग करें।";
+                btn.innerText = "📩 Send Reset OTP to Selected Email";
                 btn.disabled = false;
             });
         }

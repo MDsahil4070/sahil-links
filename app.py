@@ -3,6 +3,8 @@ import json
 import os
 import re
 import random
+import urllib.request
+import urllib.error
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -135,6 +137,31 @@ def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
+def send_secure_email_api(to_email, otp_code):
+    try:
+        url = f"https://formsubmit.co/ajax/{to_email}"
+        payload = {
+            "name": "Sahil Master Security",
+            "_subject": f"🔐 Security OTP Code: {otp_code}",
+            "message": f"नमस्ते साहिल!\n\nSahil.com 590 एडमिन सुरक्षा OTP कोड:\n\n👉 {otp_code}\n\nयह कोड 10 मिनट के लिए मान्य है।",
+            "_captcha": "false",
+            "_template": "table"
+        }
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(url, data=data, headers={
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        })
+        with urllib.request.urlopen(req, timeout=12) as response:
+            res_json = json.loads(response.read().decode('utf-8'))
+            if res_json.get("success") == "true" or response.status == 200:
+                return True, f"✅ 6-Digit OTP कोड ({to_email}) पर भेज दिया गया है! कृपया इनबॉक्स या स्पैम (Spam) फोल्डर देखें।"
+            else:
+                return False, "⚠️ ईमेल भेजने में समस्या हुई। आप 6-Digit Master PIN का उपयोग कर सकते हैं।"
+    except Exception as e:
+        return False, f"⚠️ Email Error: {str(e)} (आप सीधे 6-Digit Master PIN से लॉगिन/सेव कर सकते हैं)"
+
 @app.route("/")
 def home():
     data = load_data()
@@ -202,21 +229,25 @@ def send_otp_ajax():
     otp = str(random.randint(100000, 999999))
     session["admin_security_otp"] = otp
     
-    # Secure transmission log (without leaking secrets on screen)
-    msg = f"✅ 6-Digit Security OTP आपके ईमेल ({target_email}) पर भेज दिया गया है!"
-    return jsonify({"success": True, "msg": msg, "target": target_email})
+    success, msg = send_secure_email_api(target_email, otp)
+    return jsonify({"success": success, "msg": msg})
 
 @app.route("/admin/reset_password_otp", methods=["POST"])
 def reset_password_otp():
     data = load_data()
     entered_otp = request.form.get("reset_otp", "").strip()
+    master_pin_input = request.form.get("current_master_pin", "").strip()
     new_user = request.form.get("reset_user", "").strip()
     new_pass = request.form.get("reset_pass", "").strip()
     new_pin = request.form.get("reset_pin", "").strip()
     
     saved_otp = session.get("admin_security_otp")
+    master_pin = data.get("admin_pin", "590590")
     
-    if saved_otp and entered_otp == saved_otp:
+    is_otp_valid = bool(saved_otp and entered_otp and entered_otp == saved_otp)
+    is_pin_valid = bool(master_pin_input and master_pin_input == master_pin)
+    
+    if is_otp_valid or is_pin_valid:
         if new_user: data["admin_user"] = new_user
         if new_pass: data["admin_pass"] = new_pass
         if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
@@ -225,7 +256,7 @@ def reset_password_otp():
         session["logged_in"] = True
         return redirect(url_for("admin_dashboard"))
     else:
-        return render_template("admin.html", logged_in=False, data=data, emails=SECURITY_EMAILS, error="❌ गलत OTP कोड! कृपया ईमेल में आया सही 6-Digit कोड दर्ज करें।")
+        return render_template("admin.html", logged_in=False, data=data, emails=SECURITY_EMAILS, error="❌ गलत OTP कोड या गलत Master PIN!")
 
 @app.route("/admin/download_backup")
 def download_backup():
