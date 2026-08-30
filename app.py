@@ -2,6 +2,10 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 import json
 import os
 import re
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -32,6 +36,10 @@ def load_data():
         default_data = {
             "admin_user": "admin",
             "admin_pass": "SahilPassword@590",
+            "admin_pin": "590590",
+            "admin_email": "mdsahilkingboos@gmail.com",
+            "smtp_email": "",
+            "smtp_app_pass": "",
             "total_views": 0,
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
@@ -116,9 +124,11 @@ def load_data():
         return default_data
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
+        if "admin_pin" not in data: data["admin_pin"] = "590590"
+        if "admin_email" not in data: data["admin_email"] = "mdsahilkingboos@gmail.com"
+        if "smtp_email" not in data: data["smtp_email"] = ""
+        if "smtp_app_pass" not in data: data["smtp_app_pass"] = ""
         if "total_views" not in data: data["total_views"] = 0
-        if "admin_user" not in data: data["admin_user"] = "admin"
-        if "admin_pass" not in data: data["admin_pass"] = "SahilPassword@590"
         if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
         if "custom_themes" not in data: data["custom_themes"] = []
         if "custom_css" not in data: data["custom_css"] = ""
@@ -127,6 +137,42 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
+
+def send_otp_email(to_email, otp_code, data):
+    smtp_user = data.get("smtp_email") or to_email
+    smtp_pass = data.get("smtp_app_pass")
+    
+    if not smtp_pass:
+        return False, "Gmail 16-Digit App Password कॉन्फ़िगर नहीं है! नीचे Master PIN का इस्तेमाल करें।"
+    
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = f"Sahil Bio Security <{smtp_user}>"
+        msg['To'] = to_email
+        msg['Subject'] = f"🔐 Your Security OTP: {otp_code}"
+        
+        body = f"""
+        नमस्ते साहिल!
+        
+        आपके एडमिन पैनल (Sahil.com 590) में सुरक्षा बदलाव के लिए OTP अनुरोध किया गया है:
+        
+        🔑 OTP Code: {otp_code}
+        
+        यह कोड 10 मिनट के लिए मान्य है। यदि आपने यह अनुरोध नहीं किया है, तो कृपया इसे किसी के साथ साझा न करें।
+        
+        धन्यवाद,
+        Sahil.com 590 Master Security
+        """
+        msg.attach(MIMEText(body, 'plain'))
+        
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(smtp_user, to_email, msg.as_string())
+        server.quit()
+        return True, "✅ OTP आपके ईमेल पर भेज दिया गया है!"
+    except Exception as e:
+        return False, f"Email Error: {str(e)} (आप सीधे 6-Digit PIN का इस्तेमाल कर सकते हैं)"
 
 @app.route("/")
 def home():
@@ -177,11 +223,14 @@ def admin():
     if request.method == "POST":
         user = request.form.get("username")
         pwd = request.form.get("password")
-        if user == data.get("admin_user", "admin") and pwd == data.get("admin_pass", "SahilPassword@590"):
+        pin = request.form.get("emergency_pin")
+        
+        # Regular login OR Master 6-Digit PIN recovery login
+        if (user == data.get("admin_user", "admin") and pwd == data.get("admin_pass", "SahilPassword@590")) or (pin and pin == data.get("admin_pin", "590590")):
             session["logged_in"] = True
             return redirect(url_for("admin_dashboard"))
         else:
-            return render_template("admin.html", logged_in=False, data=data, error="गलत यूज़रनेम या पासवर्ड!")
+            return render_template("admin.html", logged_in=False, data=data, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
     return render_template("admin.html", logged_in=False, data=data)
 
 @app.route("/admin/download_backup")
@@ -201,7 +250,43 @@ def admin_dashboard():
     if request.method == "POST":
         action = request.form.get("action")
         
-        if action == "restore_backup":
+        if action == "send_email_otp":
+            otp = str(random.randint(100000, 999999))
+            session["admin_security_otp"] = otp
+            success, message = send_otp_email(data.get("admin_email", "mdsahilkingboos@gmail.com"), otp, data)
+            msg_status = message
+
+        elif action == "update_security_credentials":
+            new_u = request.form.get("new_username", "").strip()
+            new_p = request.form.get("new_password", "").strip()
+            new_pin = request.form.get("new_pin", "").strip()
+            entered_otp = request.form.get("otp_code", "").strip()
+            entered_pin = request.form.get("current_pin", "").strip()
+            
+            saved_otp = session.get("admin_security_otp")
+            master_pin = data.get("admin_pin", "590590")
+            
+            # Security verification: Verified if entered valid OTP OR entered correct current Master PIN
+            is_verified = (saved_otp and entered_otp == saved_otp) or (entered_pin == master_pin)
+            
+            if is_verified:
+                if new_u: data["admin_user"] = new_u
+                if new_p: data["admin_pass"] = new_p
+                if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
+                session.pop("admin_security_otp", None)
+                save_data(data)
+                msg_status = "✅ सुरक्षा सत्यापन सफल! यूजरनेम, पासवर्ड और PIN अपडेट हो गए!"
+            else:
+                msg_status = "❌ गलत OTP कोड या गलत 6-Digit Master PIN! बदलाव अस्वीकार कर दिया गया।"
+
+        elif action == "update_smtp_settings":
+            data["admin_email"] = request.form.get("admin_email", "mdsahilkingboos@gmail.com").strip()
+            data["smtp_email"] = request.form.get("smtp_email", "").strip()
+            data["smtp_app_pass"] = request.form.get("smtp_app_pass", "").strip()
+            save_data(data)
+            msg_status = "✅ ईमेल और SMTP सेटिंग्स सुरक्षित हो गईं!"
+
+        elif action == "restore_backup":
             if 'backup_file' in request.files:
                 file = request.files['backup_file']
                 if file and file.filename.endswith('.json'):
@@ -219,15 +304,6 @@ def admin_dashboard():
                 l["clicks"] = 0
             save_data(data)
             msg_status = "✅ एनालिटिक्स डेटा रीसेट हो गया!"
-
-        elif action == "change_credentials":
-            new_u = request.form.get("new_username", "").strip()
-            new_p = request.form.get("new_password", "").strip()
-            if new_u and new_p:
-                data["admin_user"] = new_u
-                data["admin_pass"] = new_p
-                save_data(data)
-                msg_status = "✅ एडमिन यूजरनेम और पासवर्ड बदल दिया गया!"
 
         elif action == "create_custom_theme":
             t_name = request.form.get("theme_name", "").strip()
@@ -251,7 +327,7 @@ def admin_dashboard():
                 })
                 data["theme"] = slug
                 save_data(data)
-                msg_status = f"✅ कस्टम थीम '{t_name}' बन गई और लागू हो गई!"
+                msg_status = f"✅ कस्टम थीम '{t_name}' बन गई!"
 
         elif action == "upload_css_file":
             if 'css_file' in request.files:
@@ -260,7 +336,7 @@ def admin_dashboard():
                     content = f.read().decode('utf-8', errors='ignore')
                     data["custom_css"] = content
                     save_data(data)
-                    msg_status = "✅ कस्टम CSS फाइल सफलतापूर्वक अपलोड हो गई!"
+                    msg_status = "✅ कस्टम CSS फाइल अपलोड हो गई!"
 
         elif action == "delete_custom_theme":
             idx = int(request.form.get("index"))
