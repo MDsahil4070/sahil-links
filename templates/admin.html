@@ -154,38 +154,6 @@
 
                     <button type="submit" class="btn-main" style="background: #0088cc;">Verify & Save Security Details 🚀</button>
                 </form>
-
-                <!-- DUAL BOT CONFIG ACCORDION -->
-                <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 10px;">
-                    <details {% if not data.tg_bot_token %}open{% endif %}>
-                        <summary style="font-size: 12.5px; color: #38bdf8; cursor: pointer; font-weight: 700;">⚙️ Configure 2 Telegram Bots (Primary & Backup)</summary>
-                        <form method="POST" action="/admin/dashboard" style="margin-top: 10px; background: rgba(0,0,0,0.3); padding: 14px; border-radius: 12px;">
-                            <input type="hidden" name="action" value="update_tg_settings">
-                            
-                            <!-- BOT 1 -->
-                            <h4 style="color: #fbbf24; font-size: 13px; margin-bottom: 6px;">🤖 Telegram Bot 1 (Primary)</h4>
-                            <label style="font-size: 11.5px;">Bot 1 Token (from @BotFather)</label>
-                            <input type="text" name="tg_bot_token" value="{{ data.tg_bot_token }}" placeholder="e.g. 7123456789:AAHxxxxxxxxxxxxxxxxxxxx">
-                            
-                            <label style="font-size: 11.5px;">Bot 1 Chat ID (from @userinfobot)</label>
-                            <input type="text" name="tg_chat_id" value="{{ data.tg_chat_id }}" placeholder="e.g. 1234567890">
-
-                            <!-- BOT 2 -->
-                            <h4 style="color: #38bdf8; font-size: 13px; margin: 10px 0 6px;">🤖 Telegram Bot 2 (Backup)</h4>
-                            <label style="font-size: 11.5px;">Bot 2 Token (from @BotFather)</label>
-                            <input type="text" name="tg_bot_token_2" value="{{ data.tg_bot_token_2 }}" placeholder="Backup Bot Token (Optional)">
-                            
-                            <label style="font-size: 11.5px;">Bot 2 Chat ID (from @userinfobot)</label>
-                            <input type="text" name="tg_chat_id_2" value="{{ data.tg_chat_id_2 }}" placeholder="Backup Chat ID (Optional)">
-
-                            <small style="color: #94a3b8; display: block; margin-bottom: 10px; font-size: 11px;">
-                                💡 <b>बॉट कैसे बनाएं:</b> Telegram में <b>@BotFather</b> को <code>/newbot</code> भेजें -> Token लें -> अपने बोट में <b>/start</b> दबाएं -> <b>@userinfobot</b> से Chat ID लेकर यहाँ सेव करें।
-                            </small>
-
-                            <button type="submit" class="btn-main" style="background: #0284c7; padding: 10px; font-size: 13px;">Save Both Bot Settings 💾</button>
-                        </form>
-                    </details>
-                </div>
             </div>
 
             <!-- 📈 REAL-TIME TRAFFIC & ANALYTICS -->
