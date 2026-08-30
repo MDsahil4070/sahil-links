@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Admin Control | Drag & Order</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: #0b0f19; color: #fff; padding: 20px 14px; display: flex; justify-content: center; }
+        .admin-card { width: 100%; max-width: 650px; background: #151c2c; padding: 25px; border-radius: 24px; border: 1px solid #28324a; }
+        h2, h3 { margin-bottom: 15px; color: #818cf8; }
+        label { font-size: 13px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 6px; }
+        input[type="text"], input[type="datetime-local"], textarea, select { width: 100%; padding: 12px; margin-bottom: 16px; background: #0b0f19; border: 1px solid #28324a; color: #fff; border-radius: 12px; font-size: 14px; }
+        .file-box { background: #1e293b; border: 2px dashed #6366f1; padding: 14px; border-radius: 12px; margin-bottom: 16px; text-align: center; }
+        
+        .switch-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #0f172a; padding: 12px 14px; border-radius: 12px; margin-bottom: 12px;
+            border: 1px solid #1e293b;
+        }
+
+        .block-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #0f172a; padding: 12px 14px; border-radius: 14px; margin-bottom: 10px;
+            border: 1px solid #1e293b;
+        }
+        .btn-move { background: #334155; border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: 800; cursor: pointer; }
+        .btn-toggle-on { background: #10b981; border: none; color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 800; }
+        .btn-toggle-off { background: #64748b; border: none; color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 800; }
+
+        button.btn-main { width: 100%; padding: 14px; background: #6366f1; color: #fff; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; font-size: 15px; }
+        .del-btn { background: #ef4444; padding: 8px 14px; font-size: 12px; border: none; border-radius: 8px; color: #fff; }
+        .link-item { display: flex; justify-content: space-between; align-items: center; background: #0b0f19; padding: 12px 16px; border-radius: 12px; margin-bottom: 10px; }
+        .msg-card { background: #0b0f19; border: 1px solid #28324a; padding: 12px; border-radius: 12px; margin-bottom: 8px; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="admin-card">
+        {% if not logged_in %}
+            <h2>🔒 Admin Login</h2>
+            {% if error %}<p style="color: #ef4444; margin-bottom: 10px;">{{ error }}</p>{% endif %}
+            <form method="POST">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="Username" required>
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit" class="btn-main">Login to Panel</button>
+            </form>
+        {% else %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>⚙️ Master Site Controls</h2>
+                <a href="/logout" style="color: #ef4444; font-weight: 700; text-decoration: none;">Logout</a>
+            </div>
+
+            <!-- 🔄 REORDER & TOGGLE ALL BLOCKS -->
+            <h3 style="color: #38bdf8;">🔄 Website Sections Order & ON/OFF Controls</h3>
+            {% for block in data.blocks %}
+            <div class="block-item">
+                <div><strong>{{ block.name }}</strong></div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <form method="POST" action="/admin/dashboard" style="margin:0;">
+                        <input type="hidden" name="action" value="toggle_block">
+                        <input type="hidden" name="index" value="{{ loop.index0 }}">
+                        <button type="submit" class="{% if block.enabled %}btn-toggle-on{% else %}btn-toggle-off{% endif %}">
+                            {% if block.enabled %}ON{% else %}OFF{% endif %}
+                        </button>
+                    </form>
+                    {% if not loop.first %}
+                    <form method="POST" action="/admin/dashboard" style="margin:0;">
+                        <input type="hidden" name="action" value="move_up">
+                        <input type="hidden" name="index" value="{{ loop.index0 }}">
+                        <button type="submit" class="btn-move">⬆️</button>
+                    </form>
+                    {% endif %}
+                    {% if not loop.last %}
+                    <form method="POST" action="/admin/dashboard" style="margin:0;">
+                        <input type="hidden" name="action" value="move_down">
+                        <input type="hidden" name="index" value="{{ loop.index0 }}">
+                        <button type="submit" class="btn-move">⬇️</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <hr style="border-color: #28324a; margin: 25px 0;">
+
+            <!-- ⚙️ SETTINGS -->
+            <form method="POST" action="/admin/dashboard" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="update_profile">
+
+                <h3 style="color: #38bdf8;">📝 Profile & About Details</h3>
+
+                <label>📖 About Sahil (Full Story / Bio Vision)</label>
+                <textarea name="about_story" rows="4">{{ data.about_story }}</textarea>
+
+                <div class="switch-row">
+                    <span>✨ Animated Neon Stars / Particle Effect</span>
+                    <input type="checkbox" name="enable_particles" style="width:20px; margin:0;" {% if data.enable_particles %}checked{% endif %}>
+                </div>
+
+                <div class="switch-row">
+                    <span>🎵 Background Audio / Music Player</span>
+                    <input type="checkbox" name="enable_music" style="width:20px; margin:0;" {% if data.enable_music %}checked{% endif %}>
+                </div>
+                <label>Music MP3 URL</label>
+                <input type="text" name="music_url" value="{{ data.music_url }}">
+
+                <h3 style="color: #38bdf8; margin-top: 15px;">📝 Content Details</h3>
+
+                <label>⏱️ Countdown Title</label>
+                <input type="text" name="countdown_title" value="{{ data.countdown_title }}">
+
+                <label>⏱️ Target Release Date & Time</label>
+                <input type="datetime-local" name="countdown_target" value="{{ data.countdown_target }}">
+
+                <label>📢 Announcement Marquee Text</label>
+                <input type="text" name="notice_text" value="{{ data.notice_text }}">
+
+                <label>🎬 YouTube Video Link</label>
+                <input type="text" name="video_url" value="{{ data.video_url }}">
+
+                <label>💸 UPI ID</label>
+                <input type="text" name="upi_id" value="{{ data.upi_id }}">
+
+                <label>💸 UPI Name</label>
+                <input type="text" name="upi_name" value="{{ data.upi_name }}">
+
+                <label>💬 WhatsApp Number</label>
+                <input type="text" name="whatsapp_num" value="{{ data.whatsapp_num }}">
+
+                <label>📁 Upload Photo (Gallery)</label>
+                <div class="file-box">
+                    <input type="file" name="avatar_file" accept="image/*" style="margin: 0; background: transparent; border: none;">
+                </div>
+
+                <label>🌟 Pro Theme Style</label>
+                <select name="theme">
+                    <option value="theme-midnight" {% if data.theme == 'theme-midnight' %}selected{% endif %}>🌙 Midnight Neon Blue & Red</option>
+                    <option value="theme-gold" {% if data.theme == 'theme-gold' %}selected{% endif %}>👑 Cyberpunk Gold & Amber</option>
+                    <option value="theme-emerald" {% if data.theme == 'theme-emerald' %}selected{% endif %}>💎 Emerald Green & Mint</option>
+                    <option value="theme-sunset" {% if data.theme == 'theme-sunset' %}selected{% endif %}>🔮 Sunset Purple & Magenta</option>
+                    <option value="theme-red" {% if data.theme == 'theme-red' %}selected{% endif %}>🔥 Deep Blood Crimson Red</option>
+                </select>
+
+                <label>Website Title</label>
+                <input type="text" name="title" value="{{ data.title }}">
+
+                <label>Tagline</label>
+                <input type="text" name="tagline" value="{{ data.tagline }}">
+
+                <label>Bio Details (Short)</label>
+                <textarea name="bio" rows="2">{{ data.bio }}</textarea>
+
+                <label>AdSense Client ID</label>
+                <input type="text" name="adsense_client" value="{{ data.adsense_client }}" placeholder="ca-pub-XXXXXXXXXXXXXXXX">
+
+                <label>Custom HTML / Ads</label>
+                <textarea name="custom_html" rows="2">{{ data.custom_html }}</textarea>
+
+                <button type="submit" class="btn-main">💾 Save All Settings</button>
+            </form>
+
+            <hr style="border-color: #28324a; margin: 25px 0;">
+
+            <!-- ⭐ FAN REVIEWS MANAGEMENT -->
+            <h3 style="color: #fbbf24;">⭐ Fan Reviews & Testimonials</h3>
+            {% if data.reviews %}
+                {% for r in data.reviews %}
+                <div class="link-item">
+                    <div>
+                        <strong>{{ r.name }}</strong> ({{ r.rating }})<br>
+                        <small style="color: #94a3b8;">"{{ r.text }}"</small>
+                    </div>
+                    <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                        <input type="hidden" name="action" value="delete_review">
+                        <input type="hidden" name="index" value="{{ loop.index0 }}">
+                        <button type="submit" class="del-btn">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <h4 style="margin: 15px 0 8px; color: #94a3b8;">➕ Add New Review / Testimonial</h4>
+            <form method="POST" action="/admin/dashboard">
+                <input type="hidden" name="action" value="add_review">
+                <input type="text" name="rev_name" placeholder="Fan / Friend Name" required>
+                <input type="text" name="rev_text" placeholder="Review Text" required>
+                <select name="rev_star">
+                    <option value="⭐⭐⭐⭐⭐">⭐⭐⭐⭐⭐ (5 Star)</option>
+                    <option value="⭐⭐⭐⭐">⭐⭐⭐⭐ (4 Star)</option>
+                </select>
+                <button type="submit" class="btn-main" style="background: #f59e0b; color: #000; font-weight: 800;">Add Review</button>
+            </form>
+
+            <hr style="border-color: #28324a; margin: 25px 0;">
+
+            <!-- 📊 FAN POLL SETUP -->
+            <h3 style="color: #818cf8;">📊 Fan Poll Setup</h3>
+            <form method="POST" action="/admin/dashboard">
+                <input type="hidden" name="action" value="update_poll">
+                <label>Poll Question</label>
+                <input type="text" name="poll_question" value="{{ data.poll.question }}" placeholder="Question" required>
+                <label>Option 1</label>
+                <input type="text" name="poll_opt1" value="{{ data.poll.options[0].text if data.poll.options|length > 0 else '' }}" placeholder="Option 1" required>
+                <label>Option 2</label>
+                <input type="text" name="poll_opt2" value="{{ data.poll.options[1].text if data.poll.options|length > 1 else '' }}" placeholder="Option 2" required>
+                <label>Option 3 (Optional)</label>
+                <input type="text" name="poll_opt3" value="{{ data.poll.options[2].text if data.poll.options|length > 2 else '' }}" placeholder="Option 3 (optional)">
+                <button type="submit" class="btn-main" style="background: #4f46e5;">Save & Reset Poll Votes</button>
+            </form>
+
+            <hr style="border-color: #28324a; margin: 25px 0;">
+
+            <!-- ❓ FAQ MANAGEMENT -->
+            <h3 style="color: #38bdf8;">❓ FAQ Management</h3>
+            {% if data.faqs %}
+                {% for f in data.faqs %}
+                <div class="link-item">
+                    <div>
+                        <strong>Q: {{ f.q }}</strong><br>
+                        <small style="color: #94a3b8;">A: {{ f.a }}</small>
+                    </div>
+                    <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                        <input type="hidden" name="action" value="delete_faq">
+                        <input type="hidden" name="index" value="{{ loop.index0 }}">
+                        <button type="submit" class="del-btn">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <h4 style="margin: 15px 0 8px; color: #94a3b8;">➕ Add New FAQ</h4>
+            <form method="POST" action="/admin/dashboard">
+                <input type="hidden" name="action" value="add_faq">
+                <input type="text" name="faq_q" placeholder="Question" required>
+                <input type="text" name="faq_a" placeholder="Answer" required>
+                <button type="submit" class="btn-main" style="background: #0284c7;">Add FAQ</button>
+            </form>
+
+            <hr style="border-color: #28324a; margin: 25px 0;">
+
+            <!-- 📊 LINK MANAGEMENT -->
+            <h3 style="color: #ef4444;">🔥 Links & Highlight Tags</h3>
+            {% for link in data.links %}
+            <div class="link-item">
+                <div>
+                    <strong>{{ link.name }}</strong>
+                    {% if link.highlight %}
+                    <span style="background: linear-gradient(135deg,#ef4444,#f59e0b); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 800;">{{ link.highlight }}</span>
+                    {% endif %}
+                    <span style="background: #3b82f6; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 800;">👁️ {{ link.clicks|default(0) }}</span><br>
+                    <small style="color: #64748b;">{{ link.url }}</small>
+                </div>
+                <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                    <input type="hidden" name="action" value="delete_link">
+                    <input type="hidden" name="index" value="{{ loop.index0 }}">
+                    <button type="submit" class="del-btn">Delete</button>
+                </form>
+            </div>
+            {% endfor %}
+
+            <h4 style="margin: 15px 0 8px; color: #94a3b8;">➕ Add New Link</h4>
+            <form method="POST" action="/admin/dashboard">
+                <input type="hidden" name="action" value="add_link">
+                <input type="text" name="name" placeholder="Button Name" required>
+                <input type="text" name="url" placeholder="Link URL" required>
+                <label>Highlight Tag</label>
+                <select name="highlight">
+                    <option value="">-- No Glow Tag --</option>
+                    <option value="🔥 VIRAL">🔥 VIRAL</option>
+                    <option value="⚡ NEW">⚡ NEW</option>
+                    <option value="🚀 TRENDING">🚀 TRENDING</option>
+                    <option value="💥 MUST WATCH">💥 MUST WATCH</option>
+                    <option value="💎 VIP">💎 VIP</option>
+                </select>
+                <label>Platform Icon</label>
+                <select name="type">
+                    <option value="youtube">YouTube</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="telegram">Telegram</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="moj">Moj</option>
+                    <option value="other">Other</option>
+                </select>
+                <button type="submit" class="btn-main" style="background: #10b981;">Add Link Now</button>
+            </form>
+
+            <hr style="border-color: #28324a; margin: 25px 0;">
+
+            <!-- 🛍️ GEARS -->
+            <h3 style="color: #f59e0b;">🛍️ My Gears & Setup</h3>
+            {% if data.gears %}
+                {% for gear in data.gears %}
+                <div class="link-item">
+                    <div>
+                        <strong><i class="{{ gear.icon }}"></i> {{ gear.name }}</strong> ({{ gear.tag }})<br>
+                        <small style="color: #64748b;">{{ gear.url }}</small>
+                    </div>
+                    <form method="POST" action="/admin/dashboard" style="margin: 0;">
+                        <input type="hidden" name="action" value="delete_gear">
+                        <input type="hidden" name="index" value="{{ loop.index0 }}">
+                        <button type="submit" class="del-btn">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <h4 style="margin: 15px 0 8px; color: #94a3b8;">➕ Add New Gear Item</h4>
+            <form method="POST" action="/admin/dashboard">
+                <input type="hidden" name="action" value="add_gear">
+                <input type="text" name="gear_name" placeholder="Item Name" required>
+                <input type="text" name="gear_tag" placeholder="Tag" required>
+                <input type="text" name="gear_url" placeholder="Affiliate URL" required>
+                <select name="gear_icon">
+                    <option value="fa-solid fa-mobile-screen">📱 Phone / Camera</option>
+                    <option value="fa-solid fa-microphone-lines">🎙️ Microphone</option>
+                    <option value="fa-solid fa-film">🎬 Editing App</option>
+                    <option value="fa-solid fa-lightbulb">💡 Lighting / Ring Light</option>
+                    <option value="fa-solid fa-camera">📷 DSLR / Tripod</option>
+                    <option value="fa-solid fa-bag-shopping">🛍️ Other Gear</option>
+                </select>
+                <button type="submit" class="btn-main" style="background: #f59e0b; color: #000; font-weight: 800;">Add Gear Item</button>
+            </form>
+
+            <hr style="border-color: #28324a; margin: 25px 0;">
+
+            <!-- 📬 FAN MESSAGES -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0;">📬 Fan Messages ({{ data.messages|length }})</h3>
+                {% if data.messages %}
+                <form method="POST" action="/admin/dashboard" style="margin:0;">
+                    <input type="hidden" name="action" value="clear_messages">
+                    <button type="submit" class="del-btn" style="padding: 4px 10px;">Clear All</button>
+                </form>
+                {% endif %}
+            </div>
+            {% for msg in data.messages %}
+            <div class="msg-card">
+                <strong>👤 {{ msg.name }}</strong> <small style="color: #818cf8;">({{ msg.contact }})</small><br>
+                <p style="margin-top: 4px; color: #cbd5e1;">💬 {{ msg.msg }}</p>
+            </div>
+            {% else %}
+            <p style="color: #64748b; font-size: 13px;">No new messages yet.</p>
+            {% endfor %}
+        {% endif %}
+    </div>
+</body>
+</html>

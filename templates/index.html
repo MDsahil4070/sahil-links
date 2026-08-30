@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.title }}</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    {% if data.adsense_client %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ data.adsense_client }}" crossorigin="anonymous"></script>
+    {% endif %}
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            min-height: 100vh; display: flex; justify-content: center; align-items: center;
+            padding: 24px 14px; overflow-x: hidden; transition: background 0.5s ease;
+        }
+
+        body.theme-midnight { background-color: #030712; color: #fff; }
+        body.theme-midnight .glow-1 { background: radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, transparent 70%); }
+        body.theme-midnight .glow-2 { background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%); }
+        body.theme-midnight .glass-container { background: rgba(15, 23, 42, 0.85); border-color: rgba(255, 255, 255, 0.12); }
+
+        body.theme-gold { background-color: #0c0a09; color: #fff; }
+        body.theme-gold .glow-1 { background: radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, transparent 70%); }
+        body.theme-gold .glow-2 { background: radial-gradient(circle, rgba(217, 119, 6, 0.3) 0%, transparent 70%); }
+        body.theme-gold .glass-container { background: rgba(28, 25, 23, 0.85); border-color: rgba(245, 158, 11, 0.3); }
+
+        body.theme-emerald { background-color: #022c22; color: #fff; }
+        body.theme-emerald .glow-1 { background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, transparent 70%); }
+        body.theme-emerald .glow-2 { background: radial-gradient(circle, rgba(5, 150, 105, 0.3) 0%, transparent 70%); }
+        body.theme-emerald .glass-container { background: rgba(6, 78, 59, 0.85); border-color: rgba(16, 185, 129, 0.3); }
+
+        body.theme-sunset { background-color: #180324; color: #fff; }
+        body.theme-sunset .glow-1 { background: radial-gradient(circle, rgba(236, 72, 153, 0.35) 0%, transparent 70%); }
+        body.theme-sunset .glow-2 { background: radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, transparent 70%); }
+        body.theme-sunset .glass-container { background: rgba(46, 16, 64, 0.85); border-color: rgba(236, 72, 153, 0.3); }
+
+        body.theme-red { background-color: #150505; color: #fff; }
+        body.theme-red .glow-1 { background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, transparent 70%); }
+        body.theme-red .glow-2 { background: radial-gradient(circle, rgba(153, 27, 27, 0.3) 0%, transparent 70%); }
+        body.theme-red .glass-container { background: rgba(45, 10, 10, 0.85); border-color: rgba(239, 68, 68, 0.3); }
+
+        .glow-1, .glow-2 { position: fixed; width: 380px; height: 380px; filter: blur(70px); z-index: 0; }
+        .glow-1 { top: -10%; left: -10%; }
+        .glow-2 { bottom: -10%; right: -10%; }
+
+        #particles-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+        .glass-container {
+            position: relative; z-index: 1; width: 100%; max-width: 430px;
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid; border-radius: 32px; padding: 28px 18px; text-align: center;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+        }
+
+        .music-btn {
+            position: absolute; top: 18px; right: 18px; width: 36px; height: 36px;
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: #fff; cursor: pointer; font-size: 14px; z-index: 10;
+        }
+
+        .avatar-box { position: relative; width: 105px; height: 105px; margin: 0 auto 14px; }
+        .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+        .badge { position: absolute; bottom: 2px; right: 2px; background: #00f2fe; color: #000; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; border: 2px solid #000; }
+
+        .title { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
+        .tag { font-size: 13px; color: #818cf8; font-weight: 700; margin: 4px 0 6px; }
+        .stat-badge { display: inline-block; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; color: #38bdf8; margin-bottom: 8px; }
+        .bio { font-size: 13.5px; color: #94a3b8; white-space: pre-line; margin-bottom: 14px; }
+
+        .about-accordion {
+            background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px; margin-bottom: 14px; text-align: left; overflow: hidden;
+        }
+        .about-header {
+            padding: 10px 14px; font-size: 13px; font-weight: 800; color: #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+        }
+        .about-content {
+            padding: 0 14px 12px; font-size: 12.5px; color: #cbd5e1; line-height: 1.5;
+            display: none; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 8px;
+        }
+        .about-accordion.active .about-content { display: block; }
+        .about-accordion.active .about-header i { transform: rotate(180deg); }
+
+        .marquee-box {
+            background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4);
+            padding: 8px 12px; border-radius: 12px; font-size: 12.5px; font-weight: 700;
+            color: #fca5a5; margin-bottom: 14px; overflow: hidden; white-space: nowrap;
+        }
+
+        .countdown-card {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(99, 102, 241, 0.15));
+            border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 20px;
+            padding: 14px; margin-bottom: 14px; text-align: center;
+        }
+        .countdown-title { font-size: 13px; font-weight: 800; color: #fca5a5; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .timer-boxes { display: flex; justify-content: center; gap: 8px; }
+        .time-unit { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 6px 10px; min-width: 58px; }
+        .time-val { font-size: 18px; font-weight: 900; color: #fff; }
+        .time-lbl { font-size: 9.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+
+        .poll-box {
+            background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(129, 140, 248, 0.3);
+            border-radius: 20px; padding: 14px; margin-bottom: 14px; text-align: left;
+        }
+        .poll-question { font-size: 13.5px; font-weight: 800; color: #e2e8f0; margin-bottom: 12px; }
+        .poll-option-btn {
+            position: relative; width: 100%; padding: 11px 14px; background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; margin-bottom: 8px;
+            color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; text-align: left;
+            overflow: hidden; display: flex; justify-content: space-between; align-items: center;
+        }
+        .poll-progress {
+            position: absolute; top: 0; left: 0; bottom: 0; background: linear-gradient(90deg, rgba(99, 102, 241, 0.3), rgba(239, 68, 68, 0.4));
+            z-index: 0; transition: width 0.6s ease;
+        }
+        .poll-text { position: relative; z-index: 1; }
+        .poll-stat { position: relative; z-index: 1; font-size: 12px; color: #38bdf8; font-weight: 800; }
+
+        .smart-video-card {
+            display: block; position: relative; width: 100%; border-radius: 20px;
+            overflow: hidden; margin-bottom: 16px; text-decoration: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.15);
+            background: #000; aspect-ratio: 16 / 9; cursor: pointer; transition: transform 0.3s ease;
+        }
+        .smart-video-card:hover { transform: scale(1.02); }
+        .video-thumbnail { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.85); }
+        .play-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%); }
+        .play-btn-circle { width: 55px; height: 55px; background: rgba(255, 0, 0, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; box-shadow: 0 0 25px rgba(255, 0, 0, 0.8); }
+        .video-tagline { position: absolute; bottom: 10px; font-size: 13px; font-weight: 800; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+
+        .hot-sub-card {
+            display: block; text-decoration: none; position: relative;
+            background: linear-gradient(135deg, #ff0000, #b91c1c);
+            padding: 14px 18px; border-radius: 18px; margin-bottom: 14px;
+            overflow: hidden; box-shadow: 0 0 25px rgba(255, 0, 0, 0.5);
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+        @keyframes pulseGlow { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+        .sub-inner { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2; }
+        .bell-box { background: rgba(255, 255, 255, 0.2); padding: 6px 10px; border-radius: 10px; font-size: 13px; color: #fff; }
+        .ringing-bell { display: inline-block; animation: ringBell 1.5s infinite ease-in-out; color: #fef08a; }
+        @keyframes ringBell { 0%, 100% { transform: rotate(0deg); } 20%, 40% { transform: rotate(20deg); } }
+
+        .links-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+        .link-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 13px 16px; border-radius: 16px; text-decoration: none; color: #fff;
+            font-weight: 700; font-size: 14.5px; background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08); transition: 0.3s;
+        }
+        .link-row:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.1); }
+        .icon-box { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .youtube .icon-box { background: #ff0000; }
+        .facebook .icon-box { background: #1877f2; }
+        .telegram .icon-box { background: #0088cc; }
+        .moj .icon-box { background: #f59e0b; }
+        .instagram .icon-box { background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); }
+        .other .icon-box { background: #6366f1; }
+        .glow-tag { font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 20px; background: linear-gradient(135deg, #ef4444, #f59e0b); color: #fff; margin-left: 8px; }
+
+        .gears-box { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 14px; margin-bottom: 14px; text-align: left; }
+        .gears-header { font-size: 13px; font-weight: 800; color: #f59e0b; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .gear-grid { display: flex; flex-direction: column; gap: 8px; }
+        .gear-card { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0, 0, 0, 0.35); border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.06); text-decoration: none; color: #fff; }
+        .gear-info { display: flex; align-items: center; gap: 10px; }
+        .gear-icon { width: 32px; height: 32px; background: rgba(245, 158, 11, 0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #f59e0b; font-size: 14px; }
+        .gear-btn-tag { font-size: 11px; background: #f59e0b; color: #000; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
+
+        .reviews-box {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 20px; padding: 14px; margin-bottom: 14px; text-align: left;
+        }
+        .rev-card {
+            background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px; padding: 10px 12px; margin-bottom: 8px;
+        }
+        .rev-card:last-child { margin-bottom: 0; }
+
+        .faq-box { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 14px; margin-bottom: 14px; text-align: left; }
+        .faq-item { border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 0; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-q { font-size: 13.5px; font-weight: 700; color: #e2e8f0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .faq-a { font-size: 12.5px; color: #94a3b8; margin-top: 6px; line-height: 1.4; display: none; }
+        .faq-item.active .faq-a { display: block; }
+        .faq-item.active .faq-q i { transform: rotate(180deg); }
+
+        .upi-card { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 18px; padding: 14px; margin-bottom: 14px; text-align: center; }
+        .upi-qr-img { width: 130px; height: 130px; border-radius: 12px; margin: 8px auto; background: #fff; padding: 6px; }
+
+        .whatsapp-btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, #25d366, #128c7e); color: #fff; text-decoration: none; padding: 13px; border-radius: 16px; font-weight: 800; font-size: 14.5px; margin-bottom: 14px; }
+
+        .fan-box { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px; padding: 14px; margin-bottom: 14px; text-align: left; }
+        .fan-input { width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 13px; margin-bottom: 8px; }
+        .fan-btn { width: 100%; padding: 10px; background: #6366f1; border: none; border-radius: 10px; color: #fff; font-weight: 700; cursor: pointer; }
+
+        .share-btn { margin-top: 15px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 20px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 30px; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; }
+    </style>
+</head>
+<body class="{{ data.theme }}">
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+
+    {% if data.enable_particles %}
+    <canvas id="particles-canvas"></canvas>
+    {% endif %}
+
+    <div class="glass-container">
+        {% if data.enable_music and data.music_url %}
+        <div class="music-btn" onclick="toggleAudio()" title="Background Music">
+            <i class="fa-solid fa-volume-high" id="music-icon"></i>
+        </div>
+        <audio id="bg-audio" loop src="{{ data.music_url }}"></audio>
+        {% endif %}
+
+        <div class="avatar-box">
+            <img src="{{ data.avatar_url }}" alt="Profile" class="avatar-img">
+            <div class="badge"><i class="fa-solid fa-check"></i></div>
+        </div>
+
+        <h1 class="title">{{ data.title }}</h1>
+        <div class="tag">{{ data.tagline }}</div>
+
+        {% if data.enable_badge %}
+        <div class="stat-badge">{{ data.badge_text }}</div>
+        {% endif %}
+
+        <p class="bio">{{ data.bio }}</p>
+
+        <!-- 🚀 DYNAMIC BLOCKS -->
+        {% for block in data.blocks %}
+            {% if block.enabled %}
+
+                {% if block.id == 'notice' and data.notice_text %}
+                <div class="marquee-box">
+                    <marquee behavior="scroll" direction="left">{{ data.notice_text }}</marquee>
+                </div>
+                {% endif %}
+
+                <!-- 📖 ABOUT ME ACCORDION BLOCK -->
+                {% if block.id == 'about' and data.about_story %}
+                <div class="about-accordion" onclick="this.classList.toggle('active')">
+                    <div class="about-header">
+                        <span><i class="fa-solid fa-user-ninja" style="color: #818cf8; margin-right: 6px;"></i> About Sahil & Vision</span>
+                        <i class="fa-solid fa-chevron-down" style="font-size: 11px; color: #64748b; transition: 0.3s;"></i>
+                    </div>
+                    <div class="about-content">
+                        {{ data.about_story }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if block.id == 'countdown' and data.countdown_target %}
+                <div class="countdown-card">
+                    <div class="countdown-title">
+                        <i class="fa-solid fa-fire"></i>
+                        <span>{{ data.countdown_title }}</span>
+                    </div>
+                    <div class="timer-boxes">
+                        <div class="time-unit"><div class="time-val" id="days">00</div><div class="time-lbl">Days</div></div>
+                        <div class="time-unit"><div class="time-val" id="hours">00</div><div class="time-lbl">Hours</div></div>
+                        <div class="time-unit"><div class="time-val" id="minutes">00</div><div class="time-lbl">Mins</div></div>
+                        <div class="time-unit"><div class="time-val" id="seconds">00</div><div class="time-lbl">Secs</div></div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if block.id == 'poll' and data.poll %}
+                <div class="poll-box">
+                    <div class="poll-question">📊 {{ data.poll.question }}</div>
+                    {% for opt in data.poll.options %}
+                    <form action="/vote/{{ loop.index0 }}" method="POST" style="margin: 0;">
+                        <button type="submit" class="poll-option-btn">
+                            <div class="poll-progress" style="width: {{ opt.percent }}%;"></div>
+                            <span class="poll-text">{{ opt.text }}</span>
+                            <span class="poll-stat">{{ opt.percent }}% ({{ opt.votes }})</span>
+                        </button>
+                    </form>
+                    {% endfor %}
+                    <div style="font-size: 11px; color: #64748b; text-align: right; margin-top: 4px;">Total Votes: {{ data.poll.total_votes }}</div>
+                </div>
+                {% endif %}
+
+                {% if block.id == 'video' and data.video_url %}
+                <a href="{{ data.video_url }}" target="_blank" class="smart-video-card">
+                    {% if data.video_id %}
+                    <img class="video-thumbnail" src="https://img.youtube.com/vi/{{ data.video_id }}/hqdefault.jpg" alt="Video Thumbnail">
+                    {% else %}
+                    <div style="width: 100%; height: 100%; background: #222;"></div>
+                    {% endif %}
+                    <div class="play-overlay">
+                        <div class="play-btn-circle"><i class="fa-solid fa-play" style="margin-left: 4px;"></i></div>
+                        <div class="video-tagline">▶️ Watch Latest Video / Short</div>
+                    </div>
+                </a>
+                {% endif %}
+
+                {% if block.id == 'subscribe' %}
+                <a href="https://youtube.com/@sahil.com590_" target="_blank" class="hot-sub-card">
+                    <div class="sub-inner">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-brands fa-youtube" style="font-size: 26px; color: #fff;"></i>
+                            <div style="text-align: left;">
+                                <div style="font-size: 14.5px; font-weight: 900; color: #fff; text-transform: uppercase;">Subscribe Now</div>
+                                <div style="font-size: 11px; color: #fecaca; font-weight: 600;">Daily Viral Shorts 🚀</div>
+                            </div>
+                        </div>
+                        <div class="bell-box"><i class="fa-solid fa-bell ringing-bell"></i></div>
+                    </div>
+                </a>
+                {% endif %}
+
+                {% if block.id == 'links' %}
+                <div class="links-list">
+                    {% for link in data.links %}
+                    <a href="/click/{{ loop.index0 }}" target="_blank" class="link-row {{ link.type }}">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="icon-box"><i class="{{ link.icon }}"></i></div>
+                            <span>{{ link.name }}</span>
+                            {% if link.highlight %}<span class="glow-tag">{{ link.highlight }}</span>{% endif %}
+                        </div>
+                        <i class="fa-solid fa-chevron-right" style="color: #64748b; font-size: 12px;"></i>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if block.id == 'gears' and data.gears %}
+                <div class="gears-box">
+                    <div class="gears-header"><i class="fa-solid fa-bag-shopping"></i> <span>My Shooting Gear & Setup (Affiliate)</span></div>
+                    <div class="gear-grid">
+                        {% for gear in data.gears %}
+                        <a href="{{ gear.url }}" target="_blank" class="gear-card">
+                            <div class="gear-info">
+                                <div class="gear-icon"><i class="{{ gear.icon }}"></i></div>
+                                <div>
+                                    <div style="font-size: 13.5px; font-weight: 700;">{{ gear.name }}</div>
+                                    <div style="font-size: 11px; color: #94a3b8;">{{ gear.tag }}</div>
+                                </div>
+                            </div>
+                            <div class="gear-btn-tag">View / Buy <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 9px;"></i></div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if block.id == 'reviews' and data.reviews %}
+                <div class="reviews-box">
+                    <div style="font-size: 13px; font-weight: 800; color: #fbbf24; margin-bottom: 10px;"><i class="fa-solid fa-star"></i> Fan Reviews & Love</div>
+                    {% for r in data.reviews %}
+                    <div class="rev-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <strong style="font-size: 12.5px; color: #f8fafc;">{{ r.name }}</strong>
+                            <span style="font-size: 11px;">{{ r.rating }}</span>
+                        </div>
+                        <p style="font-size: 12px; color: #cbd5e1; line-height: 1.4;">"{{ r.text }}"</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if block.id == 'faq' and data.faqs %}
+                <div class="faq-box">
+                    <div style="font-size: 13px; font-weight: 800; color: #38bdf8; margin-bottom: 8px;"><i class="fa-solid fa-circle-question"></i> FAQ & Info</div>
+                    {% for f in data.faqs %}
+                    <div class="faq-item" onclick="this.classList.toggle('active')">
+                        <div class="faq-q">
+                            <span>{{ f.q }}</span>
+                            <i class="fa-solid fa-chevron-down" style="font-size: 11px; color: #64748b; transition: 0.3s;"></i>
+                        </div>
+                        <div class="faq-a">{{ f.a }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if block.id == 'upi' and data.upi_id %}
+                <div class="upi-card">
+                    <div style="font-size: 13.5px; font-weight: 800; color: #34d399;">☕ Support My Work (UPI)</div>
+                    <img class="upi-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa={{ data.upi_id }}&pn={{ data.upi_name }}" alt="UPI QR">
+                    <div style="font-size: 12px; color: #94a3b8; font-weight: 700;">UPI ID: <span style="color: #fff;">{{ data.upi_id }}</span></div>
+                </div>
+                {% endif %}
+
+                {% if block.id == 'whatsapp' and data.whatsapp_num %}
+                <a href="https://wa.me/{{ data.whatsapp_num }}?text=Hello%20Sahil,%20I%20want%20to%20collaborate!" target="_blank" class="whatsapp-btn">
+                    <i class="fa-brands fa-whatsapp" style="font-size: 20px;"></i>
+                    <span>Business & Sponsorship Deals</span>
+                </a>
+                {% endif %}
+
+                {% if block.id == 'contact' %}
+                <div class="fan-box">
+                    <div style="font-size: 13px; font-weight: 800; color: #818cf8; margin-bottom: 8px;">📩 Send Direct Message to Sahil</div>
+                    <form action="/send_message" method="POST">
+                        <input type="text" name="fan_name" class="fan-input" placeholder="Your Name" required>
+                        <input type="text" name="fan_contact" class="fan-input" placeholder="Phone / Insta ID (Optional)">
+                        <textarea name="fan_msg" class="fan-input" rows="2" placeholder="Write your message..." required></textarea>
+                        <button type="submit" class="fan-btn">Send Message 🚀</button>
+                    </form>
+                </div>
+                {% endif %}
+
+            {% endif %}
+        {% endfor %}
+
+        {% if data.custom_html %}
+        <div style="margin-top: 15px;">{{ data.custom_html | safe }}</div>
+        {% endif %}
+
+        <button class="share-btn" onclick="navigator.clipboard.writeText(window.location.href); alert('Link Copied! 🚀');">
+            <i class="fa-solid fa-share-nodes"></i> Share Bio Link
+        </button>
+    </div>
+
+    <script>
+        const targetDate = new Date("{{ data.countdown_target }}").getTime();
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const difference = targetDate - now;
+            if (difference > 0) {
+                const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+                if (document.getElementById('days')) {
+                    document.getElementById('days').innerText = String(days).padStart(2, '0');
+                    document.getElementById('hours').innerText = String(hours).padStart(2, '0');
+                    document.getElementById('minutes').innerText = String(minutes).padStart(2, '0');
+                    document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
+                }
+            }
+        }
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        function toggleAudio() {
+            const audio = document.getElementById('bg-audio');
+            const icon = document.getElementById('music-icon');
+            if (audio.paused) {
+                audio.play();
+                icon.className = "fa-solid fa-volume-high";
+            } else {
+                audio.pause();
+                icon.className = "fa-solid fa-volume-xmark";
+            }
+        }
+
+        {% if data.enable_particles %}
+        const canvas = document.getElementById('particles-canvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const particles = [];
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 2,
+                    dx: (Math.random() - 0.5) * 0.5,
+                    dy: (Math.random() - 0.5) * 0.5
+                });
+            }
+            function animateParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                particles.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    p.x += p.dx;
+                    p.y += p.dy;
+                    if (p.x < 0 || p.x > canvas.width) p.dx = -p.dx;
+                    if (p.y < 0 || p.y > canvas.height) p.dy = -p.dy;
+                });
+                requestAnimationFrame(animateParticles);
+            }
+            animateParticles();
+        }
+        {% endif %}
+    </script>
+</body>
+</html>
