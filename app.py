@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, send_file
 import json
 import os
 import re
@@ -178,6 +178,12 @@ def admin():
             return render_template("admin.html", logged_in=False, data=data, error="गलत यूज़रनेम या पासवर्ड!")
     return render_template("admin.html", logged_in=False, data=data)
 
+@app.route("/admin/download_backup")
+def download_backup():
+    if not session.get("logged_in"): return redirect(url_for("admin"))
+    load_data()
+    return send_file(DATA_FILE, as_attachment=True, download_name="sahil_site_backup.json")
+
 @app.route("/admin/dashboard", methods=["GET", "POST"])
 def admin_dashboard():
     if not session.get("logged_in"): return redirect(url_for("admin"))
@@ -189,7 +195,19 @@ def admin_dashboard():
     if request.method == "POST":
         action = request.form.get("action")
         
-        if action == "reset_analytics":
+        if action == "restore_backup":
+            if 'backup_file' in request.files:
+                file = request.files['backup_file']
+                if file and file.filename.endswith('.json'):
+                    try:
+                        restored_data = json.load(file)
+                        save_data(restored_data)
+                        data = restored_data
+                        msg_status = "✅ बैकअप फाइल सफलतापूर्वक लोड (Restore) हो गई!"
+                    except Exception:
+                        msg_status = "❌ अमान्य JSON फाइल!"
+
+        elif action == "reset_analytics":
             data["total_views"] = 0
             for l in data.get("links", []):
                 l["clicks"] = 0
