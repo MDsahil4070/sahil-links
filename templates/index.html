@@ -3,423 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ data.title }} | Official Bio & Links</title>
+    <title>{{ data.title }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <style>
         :root {
-            --bg-color: #080c14;
-            --card-glass: rgba(18, 24, 38, 0.85);
-            --border-accent: #ff0055;
-            --glow-color-1: #ff0055;
-            --glow-color-2: #00f2fe;
-            --text-main: #ffffff;
+            --bg-color: #0b0f19;
+            --card-bg: rgba(18, 24, 38, 0.85);
+            --accent-color: #ff0055;
+            --text-color: #ffffff;
             --text-sub: #94a3b8;
         }
 
-        /* 🌟 THEMES */
-        .theme-red { --border-accent: #ff0055; --glow-color-1: #ff0055; --glow-color-2: #8b5cf6; }
-        .theme-midnight { --border-accent: #00f2fe; --glow-color-1: #00f2fe; --glow-color-2: #ff0055; }
-        .theme-gold { --border-accent: #fbbf24; --glow-color-1: #fbbf24; --glow-color-2: #f59e0b; }
-        .theme-emerald { --border-accent: #10b981; --glow-color-1: #10b981; --glow-color-2: #06b6d4; }
-        .theme-sunset { --border-accent: #a855f7; --glow-color-1: #ec4899; --glow-color-2: #8b5cf6; }
-
-        {% for ct in data.custom_themes %}
-        .{{ ct.id }} {
-            --bg-color: {{ ct.bg }};
-            --card-glass: {{ ct.card }};
-            --border-accent: {{ ct.border }};
-            --glow-color-1: {{ ct.glow1 }};
-            --glow-color-2: {{ ct.glow2 }};
-        }
-        {% endfor %}
+        .theme-red { --accent-color: #ff0055; }
+        .theme-midnight { --accent-color: #00f2fe; }
+        .theme-gold { --accent-color: #fbbf24; }
+        .theme-emerald { --accent-color: #10b981; }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body {
             background: var(--bg-color);
-            color: var(--text-main);
+            color: var(--text-color);
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            padding: 24px 14px 60px;
-            position: relative;
-            overflow-x: hidden;
+            padding: 24px 16px 50px;
         }
 
-        .bg-glow-1 {
-            position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
-            width: 380px; height: 380px; background: var(--glow-color-1);
-            filter: blur(140px); opacity: 0.28; z-index: 0; pointer-events: none; border-radius: 50%;
-        }
-        .bg-glow-2 {
-            position: absolute; bottom: 50px; right: -50px;
-            width: 320px; height: 320px; background: var(--glow-color-2);
-            filter: blur(130px); opacity: 0.2; z-index: 0; pointer-events: none; border-radius: 50%;
-        }
-
-        .main-container {
+        .container {
             width: 100%;
-            max-width: 480px;
-            z-index: 1;
+            max-width: 440px;
             display: flex;
             flex-direction: column;
             gap: 16px;
         }
 
-        /* 🚀 ENTRANCE ANIMATIONS */
-        .anim-slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .anim-zoom-pop { animation: zoomPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        .anim-float-bounce { animation: floatBounce 3s ease-in-out infinite alternate; }
-        .anim-cyber-pulse { animation: cyberPulse 2s ease-in-out infinite; }
-        
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes zoomPop { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
-        @keyframes floatBounce { from { transform: translateY(0); } to { transform: translateY(-8px); } }
-        @keyframes cyberPulse { 0%, 100% { filter: drop-shadow(0 0 10px var(--glow-color-1)); } 50% { filter: drop-shadow(0 0 25px var(--glow-color-2)); } }
-
-        /* Profile Header */
+        /* Profile Card */
         .profile-card {
-            text-align: center;
-            background: var(--card-glass);
+            background: var(--card-bg);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 24px 18px 20px;
-            border-radius: 26px;
-            backdrop-filter: blur(16px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+            padding: 24px 16px;
+            border-radius: 24px;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .avatar-wrap {
-            position: relative;
-            width: 110px; height: 110px;
-            margin: 0 auto 14px;
-        }
-        .avatar-img {
-            width: 100%; height: 100%;
+        .avatar {
+            width: 95px; height: 95px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid var(--border-accent);
-            box-shadow: 0 0 20px var(--glow-color-1);
+            border: 3px solid var(--accent-color);
+            margin-bottom: 12px;
+            box-shadow: 0 0 15px var(--accent-color);
+            background: #1e293b;
         }
-        .badge-verified {
-            position: absolute; bottom: 4px; right: 4px;
-            background: #0ea5e9; color: #fff;
-            width: 26px; height: 26px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; border: 2px solid #080c14;
-        }
-        .profile-title { font-size: 22px; font-weight: 900; margin-bottom: 2px; }
-        .profile-tag { font-size: 13px; font-weight: 700; color: var(--glow-color-1); margin-bottom: 8px; }
-        .profile-bio { font-size: 13.5px; color: var(--text-sub); line-height: 1.5; white-space: pre-line; }
+        .title { font-size: 22px; font-weight: 900; margin-bottom: 2px; }
+        .tagline { font-size: 13px; font-weight: 700; color: var(--accent-color); margin-bottom: 8px; }
+        .bio { font-size: 13px; color: var(--text-sub); line-height: 1.4; white-space: pre-line; }
 
-        /* General Block Cards */
-        .section-box {
-            background: var(--card-glass);
+        /* Links Card */
+        .link-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--card-bg);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 16px;
-            backdrop-filter: blur(14px);
+            padding: 14px 18px;
+            border-radius: 16px;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 14px;
+            transition: 0.2s;
+            backdrop-filter: blur(10px);
         }
-        .sec-head {
-            font-size: 14.5px; font-weight: 800; margin-bottom: 12px;
-            display: flex; align-items: center; gap: 8px; color: #f8fafc;
+        .link-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
         }
+        .link-left { display: flex; align-items: center; gap: 12px; }
+        .link-left i { font-size: 18px; color: var(--accent-color); }
 
-        /* Notice Marquee */
-        .notice-banner {
-            background: linear-gradient(90deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2));
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            padding: 10px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; color: #fde047;
-            overflow: hidden; white-space: nowrap;
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 20px;
         }
-
-        /* Milestones */
-        .milestones-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .milestone-item {
-            background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.06);
-            padding: 12px 6px; border-radius: 14px; text-align: center;
-        }
-        .milestone-item i { font-size: 20px; color: #fbbf24; margin-bottom: 4px; }
-        .milestone-title { font-size: 12px; font-weight: 800; color: #fff; }
-        .milestone-desc { font-size: 10px; color: var(--text-sub); }
-
-        /* Links Buttons */
-        .link-btn {
-            display: flex; align-items: center; justify-content: space-between;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 14px 18px; border-radius: 16px;
-            color: #fff; text-decoration: none; font-weight: 800; font-size: 14.5px;
-            margin-bottom: 10px; transition: 0.25s transform, 0.25s border;
-        }
-        .link-btn:hover {
-            transform: translateY(-3px) scale(1.01);
-            border-color: var(--border-accent);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-        }
-        .link-tag {
-            font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 8px;
-            background: linear-gradient(135deg, var(--glow-color-1), var(--glow-color-2));
-            color: #fff; text-transform: uppercase;
-        }
-
-        /* Gears List */
-        .gear-row {
-            display: flex; align-items: center; justify-content: space-between;
-            background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 12px 14px; border-radius: 14px; margin-bottom: 8px;
-            text-decoration: none; color: #fff;
-        }
-        .gear-row i { font-size: 18px; color: #38bdf8; }
-
-        /* Gallery Horizontal Scroll */
-        .gallery-wrap { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
-        .gallery-card { flex: 0 0 160px; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,0.1); }
-        .gallery-card img { width: 100%; height: 110px; object-fit: cover; }
-        .gallery-card p { font-size: 11.5px; font-weight: 700; padding: 6px 8px; color: #cbd5e1; }
-
-        /* Reviews Carousel / Cards */
-        .review-card {
-            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);
-            padding: 12px; border-radius: 14px; margin-bottom: 8px; font-size: 13px;
-        }
-
-        /* FAQ Accordions */
-        details.faq-item {
-            background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.06);
-            padding: 12px; border-radius: 14px; margin-bottom: 8px; font-size: 13px;
-        }
-        details.faq-item summary { font-weight: 800; cursor: pointer; color: #38bdf8; }
-        details.faq-item p { margin-top: 8px; color: var(--text-sub); line-height: 1.4; }
-
-        /* Responsive Video */
-        .video-box { position: relative; padding-bottom: 56.25%; height: 0; border-radius: 16px; overflow: hidden; }
-        .video-box iframe { position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; }
-
-        /* Custom User CSS injected */
-        {{ data.custom_css|safe }}
     </style>
 </head>
 <body class="{{ data.theme|default('theme-red') }}">
-    <div class="bg-glow-1"></div>
-    <div class="bg-glow-2"></div>
-
-    <div class="main-container {{ data.animation_style|default('anim-slide-up') }}">
-
-        <!-- 👤 HEADER & BIO (FIXED TOP) -->
+    <div class="container">
+        <!-- Profile Section -->
         <div class="profile-card">
-            <div class="avatar-wrap">
-                <img src="{{ data.avatar_url }}" class="avatar-img" alt="Sahil">
-                <div class="badge-verified"><i class="fa-solid fa-check"></i></div>
-            </div>
-            <h1 class="profile-title">{{ data.title }}</h1>
-            <div class="profile-tag">{{ data.tagline }}</div>
-            <p class="profile-bio">{{ data.bio }}</p>
+            <img src="{{ data.avatar_url|default('/static/uploads/logo.svg') }}" onerror="this.onerror=null;this.src='/static/uploads/logo.svg';" class="avatar" alt="Profile">
+            <h1 class="title">{{ data.title }}</h1>
+            <div class="tagline">{{ data.tagline }}</div>
+            <p class="bio">{{ data.bio }}</p>
         </div>
 
-        <!-- 🔄 DYNAMIC ORDERED BLOCKS (CUSTOMIZABLE VIA ADMIN) -->
-        {% for block in data.blocks %}
-            {% if block.enabled %}
-
-                <!-- 📢 1. NOTICE MARQUEE -->
-                {% if block.id == 'notice' and data.notice_text %}
-                <div class="notice-banner">
-                    <marquee scrollamount="5">🔥 {{ data.notice_text }}</marquee>
-                </div>
-
-                <!-- 🏆 2. MILESTONES -->
-                {% elif block.id == 'milestones' and data.milestones %}
-                <div class="section-box">
-                    <div class="sec-head"><i class="fa-solid fa-award" style="color:#fbbf24;"></i> Milestones & Badges</div>
-                    <div class="milestones-grid">
-                        {% for m in data.milestones %}
-                        <div class="milestone-item">
-                            <i class="{{ m.icon }}"></i>
-                            <div class="milestone-title">{{ m.title }}</div>
-                            <div class="milestone-desc">{{ m.desc }}</div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <!-- 📖 3. ABOUT ME STORY -->
-                {% if block.id == 'about' and data.about_story %}
-                <div class="section-box">
-                    <div class="sec-head"><i class="fa-solid fa-book-open" style="color:#38bdf8;"></i> About Sahil</div>
-                    <p style="font-size: 13.5px; color: var(--text-sub); line-height: 1.6; white-space: pre-line;">{{ data.about_story }}</p>
-                </div>
-                {% endif %}
-
-                <!-- 📸 4. PHOTO GALLERY & BTS -->
-                {% elif block.id == 'gallery' and data.gallery %}
-                <div class="section-box">
-                    <div class="sec-head"><i class="fa-solid fa-camera-retro" style="color:#ec4899;"></i> Behind The Scenes & BTS</div>
-                    <div class="gallery-wrap">
-                        {% for g in data.gallery %}
-                        <div class="gallery-card">
-                            <img src="{{ g.url }}" alt="{{ g.title }}">
-                            <p>{{ g.title }}</p>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <!-- ⏱️ 5. COUNTDOWN TIMER -->
-                {% elif block.id == 'countdown' and data.countdown_title and data.countdown_target %}
-                <div class="section-box" style="text-align: center;">
-                    <div class="sec-head" style="justify-content: center;"><i class="fa-solid fa-clock" style="color:#f59e0b;"></i> {{ data.countdown_title }}</div>
-                    <div id="timer-display" style="font-size: 24px; font-weight: 900; color: #38bdf8; letter-spacing: 2px;">00d 00h 00m 00s</div>
-                </div>
-
-                <!-- 📊 6. FAN POLL & VOTING -->
-                {% elif block.id == 'poll' and data.poll and data.poll.question %}
-                <div class="section-box">
-                    <div class="sec-head"><i class="fa-solid fa-square-poll-vertical" style="color:#8b5cf6;"></i> {{ data.poll.question }}</div>
-                    {% for opt in data.poll.options %}
-                    <form method="POST" action="/vote/{{ loop.index0 }}" style="margin-bottom: 8px;">
-                        <button type="submit" style="width:100%; text-align:left; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); padding:10px 14px; border-radius:12px; color:#fff; cursor:pointer; font-size:13px; font-weight:700; display:flex; justify-content:space-between;">
-                            <span>{{ opt.text }}</span>
-                            <span style="color:#38bdf8;">{{ opt.votes }} votes ({{ opt.percent }}%)</span>
-                        </button>
-                    </form>
-                    {% endfor %}
-                </div>
-
-                <!-- 🎬 7. YOUTUBE VIDEO / SHORTS -->
-                {% elif block.id == 'video' and data.video_id %}
-                <div class="section-box">
-                    <div class="sec-head"><i class="fa-brands fa-youtube" style="color:#ef4444;"></i> Latest Video / Short</div>
-                    <div class="video-box">
-                        <iframe src="https://www.youtube.com/embed/{{ data.video_id }}" allowfullscreen></iframe>
-                    </div>
-                </div>
-
-                <!-- 🔗 8. LINKS & HIGHLIGHT TAGS -->
-                {% elif block.id == 'links' and data.links %}
-                <div class="section-box">
-                    <div class="sec-head"><i class="fa-solid fa-link" style="color:#10b981;"></i> Official Links & Channels</div>
-                    {% for link in data.links %}
-                    <a href="/click/{{ loop.index0 }}" target="_blank" class="link-btn">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <i class="{{ link.icon }}" style="font-size: 18px; color: var(--glow-color-1);"></i>
-                            <span>{{ link.name }}</span>
-                        </div>
-                        {% if link.highlight %}
-                        <span class="link-tag">{{ link.highlight }}</span>
-                        {% endif %}
-                    </a>
-                    {% endfor %}
-                </div>
-
-                <!-- 🛍️ 9. GEARS & AFFILIATES -->
-                {% elif block.id == 'gears' and data.gears %}
-                <div class="section-box">
-                    <div class="sec-head"><i class="fa-solid fa-bag-shopping" style="color:#f59e0b;"></i> My Gears & Shooting Setup</div>
-                    {% for gear in data.gears %}
-                    <a href="{{ gear.url }}" target="_blank" class="gear-row">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <i class="{{ gear.icon }}"></i>
-                            <div>
-                                <div style="font-size: 13.5px; font-weight: 800;">{{ gear.name }}</div>
-                                <div style="font-size: 11px; color: var(--text-sub);">{{ gear.tag }}</div>
-                            </div>
-                        </div>
-                        <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 13px; color: #94a3b8;"></i>
-                    </a>
-                    {% endfor %}
-                </div>
-
-                <!-- ⭐ 10. FAN REVIEWS -->
-                {% elif block.id == 'reviews' and data.reviews %}
-                <div class="section-box">
-                    <div class="sec-head"><i class="fa-solid fa-star" style="color:#fbbf24;"></i> Fan Reviews & Feedback</div>
-                    {% for r in data.reviews %}
-                    <div class="review-card">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                            <strong>{{ r.name }}</strong>
-                            <span>{{ r.rating }}</span>
-                        </div>
-                        <p style="color: var(--text-sub);">"{{ r.text }}"</p>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <!-- ❓ 11. FAQ ACCORDIONS -->
-                {% elif block.id == 'faq' and data.faqs %}
-                <div class="section-box">
-                    <div class="sec-head"><i class="fa-solid fa-circle-question" style="color:#38bdf8;"></i> Frequently Asked Questions</div>
-                    {% for f in data.faqs %}
-                    <details class="faq-item">
-                        <summary>{{ f.q }}</summary>
-                        <p>{{ f.a }}</p>
-                    </details>
-                    {% endfor %}
-                </div>
-
-                <!-- 💸 12. UPI SUPPORT CARD -->
-                {% elif block.id == 'upi' and data.upi_id %}
-                <div class="section-box" style="text-align: center;">
-                    <div class="sec-head" style="justify-content: center;"><i class="fa-solid fa-qrcode" style="color:#10b981;"></i> Support My Work (UPI)</div>
-                    <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 10px;">Scan QR to send direct creator support ❤️</p>
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa={{ data.upi_id }}&pn={{ data.upi_name|urlencode }}&cu=INR" 
-                         style="border-radius: 12px; border: 2px solid rgba(255,255,255,0.1); margin-bottom: 8px;">
-                    <div style="font-size: 13px; font-weight: 800; color: #38bdf8;">{{ data.upi_id }}</div>
-                </div>
-
-                <!-- 💬 13. WHATSAPP CHAT -->
-                {% elif block.id == 'whatsapp' and data.whatsapp_num %}
-                <a href="https://wa.me/{{ data.whatsapp_num }}" target="_blank" class="link-btn" style="background: linear-gradient(135deg, #10b981, #059669); justify-content: center; gap: 8px;">
-                    <i class="fa-brands fa-whatsapp" style="font-size: 20px;"></i>
-                    <span>Chat on WhatsApp for Business</span>
-                </a>
-
-                <!-- 📩 14. FAN MESSAGE BOX -->
-                {% elif block.id == 'contact' %}
-                <div class="section-box">
-                    <div class="sec-head"><i class="fa-solid fa-paper-plane" style="color:#6366f1;"></i> Send Direct Fan Message</div>
-                    <form method="POST" action="/send_message">
-                        <input type="text" name="fan_name" placeholder="Your Name" required style="width:100%; padding:10px; margin-bottom:8px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-size:13px;">
-                        <input type="text" name="fan_contact" placeholder="Instagram ID / Phone (Optional)" style="width:100%; padding:10px; margin-bottom:8px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-size:13px;">
-                        <textarea name="fan_msg" rows="2" placeholder="Write your message..." required style="width:100%; padding:10px; margin-bottom:8px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-size:13px;"></textarea>
-                        <button type="submit" style="width:100%; padding:10px; background:#6366f1; color:#fff; font-weight:800; border:none; border-radius:10px; cursor:pointer;">Send Message 🚀</button>
-                    </form>
-                </div>
-
-                {% endif %}
-            {% endif %}
+        <!-- Links List -->
+        {% for link in data.links %}
+        <a href="/click/{{ loop.index0 }}" target="_blank" class="link-card">
+            <div class="link-left">
+                <i class="{{ link.icon }}"></i>
+                <span>{{ link.name }}</span>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="font-size: 11px; color: #64748b;"></i>
+        </a>
         {% endfor %}
 
-        <!-- Custom HTML Ad Slot -->
-        {% if data.custom_html %}
-        <div style="margin-top: 10px;">{{ data.custom_html|safe }}</div>
-        {% endif %}
-
-        <!-- Footer -->
-        <div style="text-align: center; margin-top: 20px; font-size: 11px; color: #64748b;">
-            © 2026 {{ data.title }} • Made with ❤️
+        <div class="footer">
+            © 2026 {{ data.title }} • All Rights Reserved
         </div>
     </div>
-
-    <!-- Countdown Timer Script -->
-    {% if data.countdown_target %}
-    <script>
-        const targetDate = new Date("{{ data.countdown_target }}").getTime();
-        const timerEl = document.getElementById("timer-display");
-        if (timerEl && targetDate) {
-            setInterval(() => {
-                const now = new Date().getTime();
-                const dist = targetDate - now;
-                if (dist < 0) {
-                    timerEl.innerText = "🔥 Out Now!";
-                } else {
-                    const days = Math.floor(dist / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((dist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const mins = Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60));
-                    const secs = Math.floor((dist % (1000 * 60)) / 1000);
-                    timerEl.innerText = `${days}d ${hours}h ${mins}m ${secs}s`;
-                }
-            }, 1000);
-        }
-    </script>
-    {% endif %}
 </body>
 </html>
