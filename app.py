@@ -1,7 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, send_file, jsonify
 import json
 import os
 import re
+import random
+import urllib.request
+import urllib.parse
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -32,6 +35,9 @@ def load_data():
         default_data = {
             "admin_user": "admin",
             "admin_pass": "SahilPassword@590",
+            "admin_pin": "590590",
+            "tg_bot_token": "",
+            "tg_chat_id": "",
             "total_views": 0,
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
@@ -116,9 +122,10 @@ def load_data():
         return default_data
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
+        if "admin_pin" not in data: data["admin_pin"] = "590590"
+        if "tg_bot_token" not in data: data["tg_bot_token"] = ""
+        if "tg_chat_id" not in data: data["tg_chat_id"] = ""
         if "total_views" not in data: data["total_views"] = 0
-        if "admin_user" not in data: data["admin_user"] = "admin"
-        if "admin_pass" not in data: data["admin_pass"] = "SahilPassword@590"
         if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
         if "custom_themes" not in data: data["custom_themes"] = []
         if "custom_css" not in data: data["custom_css"] = ""
@@ -127,6 +134,32 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
+
+def send_telegram_otp(otp_code, data):
+    token = data.get("tg_bot_token", "").strip()
+    chat_id = data.get("tg_chat_id", "").strip()
+    
+    if not token or not chat_id:
+        return False, "⚠️ Telegram Bot Token या Chat ID सेट नहीं है! नीचे सेटिंग्स में भरें या Master PIN इस्तेमाल करें।"
+    
+    msg_text = f"🛡️ *Sahil.com 590 Security Alert*\n\n🔑 Your Security OTP: `{otp_code}`\n\n⏱️ यह कोड 10 मिनट के लिए मान्य है।"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = urllib.parse.urlencode({
+        "chat_id": chat_id,
+        "text": msg_text,
+        "parse_mode": "Markdown"
+    }).encode('utf-8')
+    
+    try:
+        req = urllib.request.Request(url, data=payload)
+        with urllib.request.urlopen(req, timeout=8) as response:
+            res = json.loads(response.read().decode('utf-8'))
+            if res.get("ok"):
+                return True, "⚡ OTP आपके Telegram पर तुरंत भेज दिया गया है! Telegram चेक करें।"
+            else:
+                return False, f"⚠️ Telegram Error: {res.get('description')}"
+    except Exception as e:
+        return False, f"⚠️ Telegram Connection Error: {str(e)}"
 
 @app.route("/")
 def home():
@@ -177,12 +210,48 @@ def admin():
     if request.method == "POST":
         user = request.form.get("username")
         pwd = request.form.get("password")
-        if user == data.get("admin_user", "admin") and pwd == data.get("admin_pass", "SahilPassword@590"):
+        pin = request.form.get("emergency_pin")
+        
+        if (user == data.get("admin_user", "admin") and pwd == data.get("admin_pass", "SahilPassword@590")) or (pin and pin == data.get("admin_pin", "590590")):
             session["logged_in"] = True
             return redirect(url_for("admin_dashboard"))
         else:
-            return render_template("admin.html", logged_in=False, data=data, error="गलत यूज़रनेम या पासवर्ड!")
+            return render_template("admin.html", logged_in=False, data=data, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
     return render_template("admin.html", logged_in=False, data=data)
+
+@app.route("/admin/send_tg_otp", methods=["POST"])
+def send_tg_otp():
+    data = load_data()
+    otp = str(random.randint(100000, 999999))
+    session["admin_security_otp"] = otp
+    success, msg = send_telegram_otp(otp, data)
+    return jsonify({"success": success, "msg": msg})
+
+@app.route("/admin/reset_password_otp", methods=["POST"])
+def reset_password_otp():
+    data = load_data()
+    entered_otp = request.form.get("reset_otp", "").strip()
+    master_pin_input = request.form.get("current_master_pin", "").strip()
+    new_user = request.form.get("reset_user", "").strip()
+    new_pass = request.form.get("reset_pass", "").strip()
+    new_pin = request.form.get("reset_pin", "").strip()
+    
+    saved_otp = session.get("admin_security_otp")
+    master_pin = data.get("admin_pin", "590590")
+    
+    is_otp_valid = bool(saved_otp and entered_otp and entered_otp == saved_otp)
+    is_pin_valid = bool(master_pin_input and master_pin_input == master_pin)
+    
+    if is_otp_valid or is_pin_valid:
+        if new_user: data["admin_user"] = new_user
+        if new_pass: data["admin_pass"] = new_pass
+        if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
+        session.pop("admin_security_otp", None)
+        save_data(data)
+        session["logged_in"] = True
+        return redirect(url_for("admin_dashboard"))
+    else:
+        return render_template("admin.html", logged_in=False, data=data, error="❌ गलत Telegram OTP या गलत Master PIN!")
 
 @app.route("/admin/download_backup")
 def download_backup():
@@ -200,8 +269,38 @@ def admin_dashboard():
     
     if request.method == "POST":
         action = request.form.get("action")
-        
-        if action == "restore_backup":
+
+        if action == "update_security_credentials":
+            new_u = request.form.get("new_username", "").strip()
+            new_p = request.form.get("new_password", "").strip()
+            new_pin = request.form.get("new_pin", "").strip()
+            entered_otp = request.form.get("otp_code", "").strip()
+            entered_pin = request.form.get("current_pin", "").strip()
+            
+            saved_otp = session.get("admin_security_otp")
+            master_pin = data.get("admin_pin", "590590")
+            
+            is_otp_valid = bool(saved_otp and entered_otp and entered_otp == saved_otp)
+            is_pin_valid = bool(entered_pin and entered_pin == master_pin)
+            
+            if is_otp_valid or is_pin_valid:
+                if new_u: data["admin_user"] = new_u
+                if new_p: data["admin_pass"] = new_p
+                if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
+                session.pop("admin_security_otp", None)
+                save_data(data)
+                method_used = "Telegram OTP" if is_otp_valid else "Master PIN"
+                msg_status = f"✅ {method_used} सत्यापन सफल! यूजरनेम, पासवर्ड और PIN अपडेट हो गए!"
+            else:
+                msg_status = "❌ गलत Telegram OTP कोड या गलत Master PIN!"
+
+        elif action == "update_tg_settings":
+            data["tg_bot_token"] = request.form.get("tg_bot_token", "").strip()
+            data["tg_chat_id"] = request.form.get("tg_chat_id", "").strip()
+            save_data(data)
+            msg_status = "✅ Telegram Bot सेटिंग्स सुरक्षित हो गईं! अब OTP टेस्ट करें।"
+
+        elif action == "restore_backup":
             if 'backup_file' in request.files:
                 file = request.files['backup_file']
                 if file and file.filename.endswith('.json'):
@@ -219,15 +318,6 @@ def admin_dashboard():
                 l["clicks"] = 0
             save_data(data)
             msg_status = "✅ एनालिटिक्स डेटा रीसेट हो गया!"
-
-        elif action == "change_credentials":
-            new_u = request.form.get("new_username", "").strip()
-            new_p = request.form.get("new_password", "").strip()
-            if new_u and new_p:
-                data["admin_user"] = new_u
-                data["admin_pass"] = new_p
-                save_data(data)
-                msg_status = "✅ एडमिन यूजरनेम और पासवर्ड बदल दिया गया!"
 
         elif action == "create_custom_theme":
             t_name = request.form.get("theme_name", "").strip()
@@ -251,7 +341,7 @@ def admin_dashboard():
                 })
                 data["theme"] = slug
                 save_data(data)
-                msg_status = f"✅ कस्टम थीम '{t_name}' बन गई और लागू हो गई!"
+                msg_status = f"✅ कस्टम थीम '{t_name}' बन गई!"
 
         elif action == "upload_css_file":
             if 'css_file' in request.files:
@@ -260,7 +350,7 @@ def admin_dashboard():
                     content = f.read().decode('utf-8', errors='ignore')
                     data["custom_css"] = content
                     save_data(data)
-                    msg_status = "✅ कस्टम CSS फाइल सफलतापूर्वक अपलोड हो गई!"
+                    msg_status = "✅ कस्टम CSS फाइल अपलोड हो गई!"
 
         elif action == "delete_custom_theme":
             idx = int(request.form.get("index"))

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Admin Control | Animations & Theme Creator</title>
+    <title>Master Admin Control | Telegram OTP & PIN Security</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -47,24 +47,125 @@
 <body>
     <div class="admin-card">
         {% if not logged_in %}
-            <h2>🔒 Admin Login</h2>
+            <h2>🔒 Master Admin Login</h2>
             {% if error %}<p style="color: #ef4444; margin-bottom: 10px;">{{ error }}</p>{% endif %}
+            
             <form method="POST">
                 <label>Username</label>
                 <input type="text" name="username" placeholder="Username" required>
                 <label>Password</label>
                 <input type="password" name="password" placeholder="Password" required>
-                <button type="submit" class="btn-main">Login to Panel</button>
+                <button type="submit" class="btn-main">Login with Credentials</button>
             </form>
+
+            <div style="text-align: center; margin: 15px 0 10px; color: #64748b; font-size: 13px; font-weight: 700;">— OR EMERGENCY MASTER PIN LOGIN —</div>
+
+            <form method="POST" style="background: rgba(239, 68, 68, 0.08); border: 1px dashed rgba(239, 68, 68, 0.3); padding: 14px; border-radius: 14px; margin-bottom: 15px;">
+                <label style="color: #fca5a5;">🔑 Emergency 6-Digit Master PIN</label>
+                <input type="password" name="emergency_pin" placeholder="Enter 6-Digit PIN" maxlength="6" required>
+                <button type="submit" class="btn-main" style="background: #ef4444;">Direct Master PIN Login ⚡</button>
+            </form>
+
+            <!-- 🔑 FORGOT PASSWORD / RESET VIA TELEGRAM OTP OR PIN -->
+            <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.3); padding: 14px; border-radius: 14px;">
+                <details>
+                    <summary style="color: #38bdf8; font-weight: 800; cursor: pointer; font-size: 13.5px; text-align: center;">
+                        ❓ Forgot Password? Reset via Telegram OTP
+                    </summary>
+                    <div style="margin-top: 12px;">
+                        <button type="button" onclick="sendTgOtpLogin()" id="login-tg-btn" style="background: #0088cc; color: #fff; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: 800; cursor: pointer; font-size: 13.5px; margin-bottom: 12px;">
+                            <i class="fa-brands fa-telegram"></i> Send Instant 6-Digit OTP to Telegram
+                        </button>
+                        
+                        <div id="login-alert-box" style="display:none;" class="alert-box"></div>
+
+                        <form method="POST" action="/admin/reset_password_otp">
+                            <label style="font-size: 12px; color: #38bdf8;">Enter 6-Digit Telegram OTP Code:</label>
+                            <input type="text" name="reset_otp" placeholder="Enter OTP received on Telegram">
+
+                            <label style="font-size: 12px; color: #fbbf24;">OR Enter Current Master PIN (वैकल्पिक):</label>
+                            <input type="password" name="current_master_pin" placeholder="Current 6-Digit Master PIN" maxlength="6">
+
+                            <label style="font-size: 12px;">New Username</label>
+                            <input type="text" name="reset_user" placeholder="New Username" required>
+
+                            <label style="font-size: 12px;">New Password</label>
+                            <input type="password" name="reset_pass" placeholder="New Password" required>
+
+                            <label style="font-size: 12px;">New 6-Digit Master PIN</label>
+                            <input type="password" name="reset_pin" placeholder="New 6-Digit PIN (e.g. 590590)" maxlength="6" required>
+
+                            <button type="submit" class="btn-main" style="background: #0284c7; padding: 10px; font-size: 13px;">Reset Credentials & Login 🚀</button>
+                        </form>
+                    </div>
+                </details>
+            </div>
+
         {% else %}
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>⚙️ Master Site Controls</h2>
                 <a href="/logout" style="color: #ef4444; font-weight: 700; text-decoration: none;">Logout</a>
             </div>
 
+            <div id="live-alert-box" style="display:none;" class="alert-box"></div>
             {% if msg_status %}
             <div class="alert-box">{{ msg_status }}</div>
             {% endif %}
+
+            <!-- 🔐 TELEGRAM OTP & MASTER PIN CREDENTIALS CHANGE -->
+            <div style="background: rgba(0, 136, 204, 0.12); border: 2px solid rgba(0, 136, 204, 0.4); padding: 18px; border-radius: 18px; margin-bottom: 25px;">
+                <h3 style="color: #38bdf8; margin-bottom: 6px;"><i class="fa-brands fa-telegram"></i> 🛡️ Instant Telegram OTP Security Control</h3>
+                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">बटन दबाते ही 1 सेकंड में आपके Telegram पर 6-Digit OTP आ जाएगा।</p>
+
+                <button type="button" onclick="sendTgOtpDash()" id="dash-tg-btn" style="background: linear-gradient(135deg, #0088cc, #005580); color: #fff; font-weight: 800; border: none; padding: 12px 14px; border-radius: 10px; width: 100%; cursor: pointer; font-size: 14px; margin-bottom: 15px;">
+                    <i class="fa-brands fa-telegram"></i> Send Instant 6-Digit OTP to My Telegram
+                </button>
+
+                <form method="POST" action="/admin/dashboard" id="security-form">
+                    <input type="hidden" name="action" value="update_security_credentials">
+                    
+                    <label>New Admin Username</label>
+                    <input type="text" name="new_username" value="{{ data.admin_user }}" required>
+                    
+                    <label>New Admin Password</label>
+                    <input type="password" name="new_password" value="{{ data.admin_pass }}" required>
+
+                    <label>New 6-Digit Master PIN (Optional)</label>
+                    <input type="password" name="new_pin" placeholder="Enter new 6-Digit PIN" maxlength="6">
+
+                    <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                    
+                    <label style="color: #38bdf8;">🔑 Enter 6-Digit Telegram OTP (Telegram देखकर डालें):</label>
+                    <input type="text" name="otp_code" id="otp_code_input" placeholder="Enter 6-Digit OTP from Telegram">
+
+                    <label style="color: #fbbf24;">🔐 OR Enter Current 6-Digit Master PIN (वैकल्पिक):</label>
+                    <input type="password" name="current_pin" id="current_pin_input" placeholder="Enter Current 6-Digit Master PIN" maxlength="6">
+
+                    <button type="submit" class="btn-main" style="background: #0088cc;">Verify & Save Security Details 🚀</button>
+                </form>
+
+                <!-- TELEGRAM BOT CONFIG ACCORDION -->
+                <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 10px;">
+                    <details {% if not data.tg_bot_token %}open{% endif %}>
+                        <summary style="font-size: 12.5px; color: #38bdf8; cursor: pointer; font-weight: 700;">⚙️ Configure Telegram Bot (OTP पाने के लिए 1 बार भरें)</summary>
+                        <form method="POST" action="/admin/dashboard" style="margin-top: 10px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px;">
+                            <input type="hidden" name="action" value="update_tg_settings">
+                            
+                            <label style="font-size: 12px; color: #fbbf24;">Telegram Bot Token (from @BotFather)</label>
+                            <input type="text" name="tg_bot_token" value="{{ data.tg_bot_token }}" placeholder="e.g. 7123456789:AAHxxxxxxxxxxxxxxxxxxxx" required>
+                            
+                            <label style="font-size: 12px; color: #38bdf8;">Your Telegram Chat ID (from @userinfobot)</label>
+                            <input type="text" name="tg_chat_id" value="{{ data.tg_chat_id }}" placeholder="e.g. 1234567890" required>
+                            
+                            <small style="color: #94a3b8; display: block; margin-bottom: 10px; font-size: 11px;">
+                                💡 <b>बोट कैसे बनाएं (1 मिनट):</b> Telegram में <b>@BotFather</b> को <code>/newbot</code> भेजें -> Token कॉपी करें -> अपने बोट को खोलकर <b>/start</b> दबाएं -> <b>@userinfobot</b> से अपनी Chat ID लेकर यहाँ भरें।
+                            </small>
+
+                            <button type="submit" class="btn-main" style="background: #0284c7; padding: 10px; font-size: 13px;">Save Telegram Bot Settings 💾</button>
+                        </form>
+                    </details>
+                </div>
+            </div>
 
             <!-- 📈 REAL-TIME TRAFFIC & ANALYTICS -->
             <h3 style="color: #38bdf8;"><i class="fa-solid fa-chart-line"></i> 📈 Live Traffic & Click Analytics</h3>
@@ -101,19 +202,6 @@
                     <label style="font-size: 12px; color: #cbd5e1;">📁 Restore From Backup (.json File)</label>
                     <input type="file" name="backup_file" accept=".json" required style="margin-bottom: 8px; font-size: 12px; color: #94a3b8;">
                     <button type="submit" class="btn-main" style="background: #0ea5e9; padding: 10px; font-size: 13px;">Restore Data 🚀</button>
-                </form>
-            </div>
-
-            <!-- 🔐 CHANGE ADMIN USERNAME & PASSWORD -->
-            <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); padding: 16px; border-radius: 16px; margin-bottom: 25px;">
-                <h3 style="color: #a5b4fc; margin-bottom: 10px;"><i class="fa-solid fa-lock"></i> 🔐 Change Admin Password</h3>
-                <form method="POST" action="/admin/dashboard">
-                    <input type="hidden" name="action" value="change_credentials">
-                    <label>Admin Username</label>
-                    <input type="text" name="new_username" value="{{ data.admin_user }}" required>
-                    <label>Admin Password</label>
-                    <input type="password" name="new_password" value="{{ data.admin_pass }}" required>
-                    <button type="submit" class="btn-main" style="background: #4f46e5;">Update Login Details</button>
                 </form>
             </div>
 
@@ -161,7 +249,6 @@
                 {% endfor %}
                 {% endif %}
 
-                <!-- 📁 UPLOAD CUSTOM CSS FILE -->
                 <hr style="border-color: rgba(245, 158, 11, 0.2); margin: 15px 0;">
                 <h4 style="color: #cbd5e1; font-size: 13px; margin-bottom: 6px;">📁 Or Upload Custom .css Theme File</h4>
                 <form method="POST" action="/admin/dashboard" enctype="multipart/form-data">
@@ -276,7 +363,6 @@
 
                 <h3 style="color: #38bdf8;">🎬 Animation & Theme Style</h3>
 
-                <!-- 🎬 12+ ANIMATIONS DROPDOWN -->
                 <label>🎬 Choose Entrance / Floating Animation (Fast & Smooth)</label>
                 <select name="animation_style">
                     <option value="anim-slide-up" {% if data.animation_style == 'anim-slide-up' %}selected{% endif %}>🚀 Smooth Slide Up (Recommended)</option>
@@ -293,16 +379,13 @@
                     <option value="anim-none" {% if data.animation_style == 'anim-none' %}selected{% endif %}>🚫 None / No Animation (OFF)</option>
                 </select>
 
-                <!-- 🌟 PRO THEMES (ORIGINAL 5 ON TOP + CUSTOM THEMES) -->
                 <label>🌟 Pro Theme Style</label>
                 <select name="theme">
-                    <!-- Original Top Themes -->
                     <option value="theme-red" {% if data.theme == 'theme-red' %}selected{% endif %}>🔥 Deep Blood Crimson Red (Top Default)</option>
                     <option value="theme-midnight" {% if data.theme == 'theme-midnight' %}selected{% endif %}>🌙 Midnight Neon Blue & Red</option>
                     <option value="theme-gold" {% if data.theme == 'theme-gold' %}selected{% endif %}>👑 Cyberpunk Gold & Amber</option>
                     <option value="theme-emerald" {% if data.theme == 'theme-emerald' %}selected{% endif %}>💎 Emerald Green & Mint</option>
                     <option value="theme-sunset" {% if data.theme == 'theme-sunset' %}selected{% endif %}>🔮 Sunset Purple & Magenta</option>
-                    <!-- Custom Added Themes -->
                     {% for ct in data.custom_themes %}
                     <option value="{{ ct.id }}" {% if data.theme == ct.id %}selected{% endif %}>{{ ct.name }}</option>
                     {% endfor %}
@@ -558,5 +641,57 @@
             {% endfor %}
         {% endif %}
     </div>
+
+    <script>
+        function sendTgOtpDash() {
+            const btn = document.getElementById('dash-tg-btn');
+            const alertBox = document.getElementById('live-alert-box');
+            btn.innerText = "⏳ Sending to Telegram...";
+            btn.disabled = true;
+
+            fetch('/admin/send_tg_otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                alertBox.style.display = 'block';
+                alertBox.innerText = data.msg;
+                btn.innerText = "📩 Send Telegram OTP Again";
+                btn.disabled = false;
+            })
+            .catch(err => {
+                alertBox.style.display = 'block';
+                alertBox.innerText = "⚠️ Telegram OTP नहीं गया। कृपया Master PIN का उपयोग करें।";
+                btn.innerText = "📩 Send Instant 6-Digit OTP to My Telegram";
+                btn.disabled = false;
+            });
+        }
+
+        function sendTgOtpLogin() {
+            const btn = document.getElementById('login-tg-btn');
+            const alertBox = document.getElementById('login-alert-box');
+            btn.innerText = "⏳ Sending to Telegram...";
+            btn.disabled = true;
+
+            fetch('/admin/send_tg_otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                alertBox.style.display = 'block';
+                alertBox.innerText = data.msg;
+                btn.innerText = "📩 Send Telegram OTP Again";
+                btn.disabled = false;
+            })
+            .catch(err => {
+                alertBox.style.display = 'block';
+                alertBox.innerText = "⚠️ Telegram OTP नहीं गया। कृपया Master PIN का उपयोग करें।";
+                btn.innerText = "📩 Send Instant 6-Digit OTP to Telegram";
+                btn.disabled = false;
+            });
+        }
+    </script>
 </body>
 </html>
