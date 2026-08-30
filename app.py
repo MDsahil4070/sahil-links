@@ -5,6 +5,7 @@ import re
 import random
 import urllib.request
 import urllib.parse
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -41,6 +42,8 @@ def load_data():
             "tg_bot_token_2": "",
             "tg_chat_id_2": "",
             "total_views": 0,
+            "views_history": [],
+            "clicks_history": [],
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
             "bio": "🎬 Content Creator & Comedy Skits\n🔥 Connect with me on all official handles!",
@@ -125,11 +128,9 @@ def load_data():
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
         if "admin_pin" not in data: data["admin_pin"] = "590590"
-        if "tg_bot_token" not in data: data["tg_bot_token"] = ""
-        if "tg_chat_id" not in data: data["tg_chat_id"] = ""
-        if "tg_bot_token_2" not in data: data["tg_bot_token_2"] = ""
-        if "tg_chat_id_2" not in data: data["tg_chat_id_2"] = ""
-        if "total_views" not in data: data["total_views"] = 0
+        if "views_history" not in data: data["views_history"] = []
+        if "clicks_history" not in data: data["clicks_history"] = []
+        if "total_views" not in data: data["total_views"] = len(data.get("views_history", []))
         if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
         if "custom_themes" not in data: data["custom_themes"] = []
         if "custom_css" not in data: data["custom_css"] = ""
@@ -138,6 +139,38 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
+
+def calculate_stats(history_list):
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    two_days_ago = now - timedelta(days=2)
+    seven_days_ago = now - timedelta(days=7)
+    
+    today_count = 0
+    two_days_count = 0
+    seven_days_count = 0
+    lifetime_count = len(history_list)
+    
+    for item in history_list:
+        try:
+            item_date = datetime.strptime(item.split("T")[0], "%Y-%m-%d")
+            item_full = datetime.strptime(item, "%Y-%m-%dT%H:%M:%S")
+            
+            if item.startswith(today_str):
+                today_count += 1
+            if item_full >= two_days_ago:
+                two_days_count += 1
+            if item_full >= seven_days_ago:
+                seven_days_count += 1
+        except Exception:
+            pass
+            
+    return {
+        "today": today_count,
+        "two_days": two_days_count,
+        "seven_days": seven_days_count,
+        "lifetime": lifetime_count
+    }
 
 def send_single_tg_message(token, chat_id, otp_code, bot_name="Telegram Bot"):
     if not token or not chat_id:
@@ -188,7 +221,10 @@ def send_telegram_otp(otp_code, data, bot_choice="auto"):
 @app.route("/")
 def home():
     data = load_data()
-    data["total_views"] = data.get("total_views", 0) + 1
+    now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    if "views_history" not in data: data["views_history"] = []
+    data["views_history"].append(now_iso)
+    data["total_views"] = len(data["views_history"])
     save_data(data)
     
     total_votes = sum(opt.get("votes", 0) for opt in data["poll"].get("options", []))
@@ -209,10 +245,15 @@ def vote(opt_idx):
 @app.route("/click/<int:index>")
 def track_click(index):
     data = load_data()
+    now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    if "clicks_history" not in data: data["clicks_history"] = []
+    data["clicks_history"].append(now_iso)
+    
     if 0 <= index < len(data["links"]):
         data["links"][index]["clicks"] = data["links"][index].get("clicks", 0) + 1
         save_data(data)
         return redirect(data["links"][index]["url"])
+    save_data(data)
     return redirect(url_for("home"))
 
 @app.route("/send_message", methods=["POST"])
@@ -287,12 +328,20 @@ def admin_dashboard():
     data = load_data()
     msg_status = None
     
-    total_link_clicks = sum(l.get("clicks", 0) for l in data.get("links", []))
+    views_stats = calculate_stats(data.get("views_history", []))
+    clicks_stats = calculate_stats(data.get("clicks_history", []))
     
+    # Fallback to sum of link clicks if history is newly initialized
+    if clicks_stats["lifetime"] == 0:
+        total_l_clicks = sum(l.get("clicks", 0) for l in data.get("links", []))
+        clicks_stats["lifetime"] = total_l_clicks
+        clicks_stats["today"] = total_l_clicks
+        clicks_stats["two_days"] = total_l_clicks
+        clicks_stats["seven_days"] = total_l_clicks
+
     if request.method == "POST":
         action = request.form.get("action")
 
-        # ✏️ EDIT HANDLERS
         if action == "edit_link":
             idx = int(request.form.get("index"))
             if 0 <= idx < len(data["links"]):
@@ -312,7 +361,7 @@ def admin_dashboard():
                     "highlight": highlight
                 }
                 save_data(data)
-                msg_status = f"✅ लिंक '{name}' सफलतापूर्वक अपडेट हो गया!"
+                msg_status = f"✅ लिंक '{name}' अपडेट हो गया!"
 
         elif action == "edit_gear":
             idx = int(request.form.get("index"))
@@ -410,10 +459,14 @@ def admin_dashboard():
                         msg_status = "❌ अमान्य JSON फाइल!"
 
         elif action == "reset_analytics":
+            data["views_history"] = []
+            data["clicks_history"] = []
             data["total_views"] = 0
             for l in data.get("links", []):
                 l["clicks"] = 0
             save_data(data)
+            views_stats = calculate_stats([])
+            clicks_stats = calculate_stats([])
             msg_status = "✅ एनालिटिक्स डेटा रीसेट हो गया!"
 
         elif action == "create_custom_theme":
@@ -622,9 +675,9 @@ def admin_dashboard():
             data["messages"] = []
             save_data(data)
 
-        return render_template("admin.html", logged_in=True, data=data, total_link_clicks=total_link_clicks, msg_status=msg_status)
+        return render_template("admin.html", logged_in=True, data=data, views_stats=views_stats, clicks_stats=clicks_stats, msg_status=msg_status)
 
-    return render_template("admin.html", logged_in=True, data=data, total_link_clicks=total_link_clicks)
+    return render_template("admin.html", logged_in=True, data=data, views_stats=views_stats, clicks_stats=clicks_stats)
 
 @app.route("/logout")
 def logout():
