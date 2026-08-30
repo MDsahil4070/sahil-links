@@ -114,6 +114,16 @@
             "id": "contact",
             "name": "📩 Direct Fan Message Box",
             "enabled": true
+        },
+        {
+            "id": "milestones",
+            "name": "🏆 Milestones & Achievements",
+            "enabled": true
+        },
+        {
+            "id": "gallery",
+            "name": "📸 Photo Gallery & BTS Shots",
+            "enabled": true
         }
     ],
     "links": [
@@ -180,5 +190,27 @@
             "a": "Bihar, India 🇮🇳"
         }
     ],
-    "messages": []
+    "messages": [],
+    "tg_bot_token": "8631683215:AAFP-21EoOyu3jZFiNfwOCf_oYP4i_",
+    "tg_chat_id": "8110628933",
+    "tg_bot_token_2": "8600885243:AAH1HXMGQrw4dv1kmRApAMQDF",
+    "tg_chat_id_2": "5599192830",
+    "admin_pin": "590590",
+    "views_history": [
+        "2026-08-30T22:53:03",
+        "2026-08-30T22:53:05",
+        "2026-08-30T22:53:07",
+        "2026-08-30T22:53:08",
+        "2026-08-30T22:56:12",
+        "2026-08-30T22:56:15",
+        "2026-08-30T22:57:02",
+        "2026-08-30T22:57:04",
+        "2026-08-30T22:57:05"
+    ],
+    "clicks_history": [],
+    "total_views": 9,
+    "animation_style": "anim-slide-up",
+    "custom_themes": [],
+    "custom_css": "",
+    "gallery": []
 }
