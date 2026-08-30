@@ -32,6 +32,7 @@ def load_data():
         default_data = {
             "admin_user": "admin",
             "admin_pass": "SahilPassword@590",
+            "total_views": 0,
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
             "bio": "🎬 Content Creator & Comedy Skits\n🔥 Connect with me on all official handles!",
@@ -112,6 +113,7 @@ def load_data():
         return default_data
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
+        if "total_views" not in data: data["total_views"] = 0
         if "admin_user" not in data: data["admin_user"] = "admin"
         if "admin_pass" not in data: data["admin_pass"] = "SahilPassword@590"
         return data
@@ -123,6 +125,9 @@ def save_data(data):
 @app.route("/")
 def home():
     data = load_data()
+    data["total_views"] = data.get("total_views", 0) + 1
+    save_data(data)
+    
     total_votes = sum(opt.get("votes", 0) for opt in data["poll"].get("options", []))
     for opt in data["poll"].get("options", []):
         opt["percent"] = round((opt.get("votes", 0) / total_votes * 100), 1) if total_votes > 0 else 0
@@ -179,17 +184,26 @@ def admin_dashboard():
     data = load_data()
     msg_status = None
     
+    total_link_clicks = sum(l.get("clicks", 0) for l in data.get("links", []))
+    
     if request.method == "POST":
         action = request.form.get("action")
         
-        if action == "change_credentials":
+        if action == "reset_analytics":
+            data["total_views"] = 0
+            for l in data.get("links", []):
+                l["clicks"] = 0
+            save_data(data)
+            msg_status = "✅ एनालिटिक्स डेटा रीसेट हो गया!"
+
+        elif action == "change_credentials":
             new_u = request.form.get("new_username", "").strip()
             new_p = request.form.get("new_password", "").strip()
             if new_u and new_p:
                 data["admin_user"] = new_u
                 data["admin_pass"] = new_p
                 save_data(data)
-                msg_status = "✅ एडमिन यूजरनेम और पासवर्ड सफलतापूर्वक बदल दिया गया!"
+                msg_status = "✅ एडमिन यूजरनेम और पासवर्ड बदल दिया गया!"
 
         elif action == "move_up":
             idx = int(request.form.get("index"))
@@ -358,9 +372,9 @@ def admin_dashboard():
             data["messages"] = []
             save_data(data)
 
-        return render_template("admin.html", logged_in=True, data=data, msg_status=msg_status)
+        return render_template("admin.html", logged_in=True, data=data, total_link_clicks=total_link_clicks, msg_status=msg_status)
 
-    return render_template("admin.html", logged_in=True, data=data)
+    return render_template("admin.html", logged_in=True, data=data, total_link_clicks=total_link_clicks)
 
 @app.route("/logout")
 def logout():

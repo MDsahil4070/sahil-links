@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Admin Control | Drag & Order</title>
+    <title>Master Admin Control | Analytics & Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -15,6 +15,12 @@
         input[type="text"], input[type="password"], input[type="datetime-local"], textarea, select { width: 100%; padding: 12px; margin-bottom: 16px; background: #0b0f19; border: 1px solid #28324a; color: #fff; border-radius: 12px; font-size: 14px; }
         .file-box { background: #1e293b; border: 2px dashed #6366f1; padding: 14px; border-radius: 12px; margin-bottom: 16px; text-align: center; }
         
+        /* 📈 ANALYTICS CARDS */
+        .analytics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9)); border: 1px solid rgba(99, 102, 241, 0.3); padding: 16px; border-radius: 16px; text-align: center; }
+        .stat-number { font-size: 26px; font-weight: 900; color: #38bdf8; margin: 4px 0; }
+        .stat-label { font-size: 11.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+
         .switch-row {
             display: flex; align-items: center; justify-content: space-between;
             background: #0f172a; padding: 12px 14px; border-radius: 12px; margin-bottom: 12px;
@@ -58,6 +64,28 @@
             {% if msg_status %}
             <div class="alert-box">{{ msg_status }}</div>
             {% endif %}
+
+            <!-- 📈 REAL-TIME TRAFFIC & ANALYTICS -->
+            <h3 style="color: #38bdf8;"><i class="fa-solid fa-chart-line"></i> 📈 Live Traffic & Click Analytics</h3>
+            <div class="analytics-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Bio Visits</div>
+                    <div class="stat-number">👁️ {{ data.total_views|default(0) }}</div>
+                    <div style="font-size: 10px; color: #64748b;">All Time Views</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Link Clicks</div>
+                    <div class="stat-number" style="color: #10b981;">⚡ {{ total_link_clicks|default(0) }}</div>
+                    <div style="font-size: 10px; color: #64748b;">Outbound Clicks</div>
+                </div>
+            </div>
+            
+            <form method="POST" action="/admin/dashboard" style="margin-bottom: 25px;">
+                <input type="hidden" name="action" value="reset_analytics">
+                <button type="submit" style="background: transparent; border: 1px dashed #ef4444; color: #f87171; width: 100%; padding: 8px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                    🔄 Reset Views & Clicks Counter
+                </button>
+            </form>
 
             <!-- 🔐 CHANGE ADMIN USERNAME & PASSWORD -->
             <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); padding: 16px; border-radius: 16px; margin-bottom: 25px;">
@@ -335,7 +363,7 @@
                     {% if link.highlight %}
                     <span style="background: linear-gradient(135deg,#ef4444,#f59e0b); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 800;">{{ link.highlight }}</span>
                     {% endif %}
-                    <span style="background: #3b82f6; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 800;">👁️ {{ link.clicks|default(0) }}</span><br>
+                    <span style="background: #3b82f6; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 800;">👁️ {{ link.clicks|default(0) }} clicks</span><br>
                     <small style="color: #64748b;">{{ link.url }}</small>
                 </div>
                 <form method="POST" action="/admin/dashboard" style="margin: 0;">
