@@ -3,114 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ data.title }}</title>
+    <title>{{ data.title }} | Official Bio & Links</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: rgba(18, 24, 38, 0.85);
-            --accent-color: #ff0055;
-            --text-color: #ffffff;
+            --bg-color: #080c14;
+            --card-glass: rgba(18, 24, 38, 0.85);
+            --border-accent: #ff0055;
+            --glow-color-1: #ff0055;
+            --glow-color-2: #00f2fe;
+            --text-main: #ffffff;
             --text-sub: #94a3b8;
         }
 
-        .theme-red { --accent-color: #ff0055; }
-        .theme-midnight { --accent-color: #00f2fe; }
-        .theme-gold { --accent-color: #fbbf24; }
-        .theme-emerald { --accent-color: #10b981; }
+        .theme-red { --border-accent: #ff0055; --glow-color-1: #ff0055; --glow-color-2: #8b5cf6; }
+        .theme-midnight { --border-accent: #00f2fe; --glow-color-1: #00f2fe; --glow-color-2: #ff0055; }
+        .theme-gold { --border-accent: #fbbf24; --glow-color-1: #fbbf24; --glow-color-2: #f59e0b; }
+        .theme-emerald { --border-accent: #10b981; --glow-color-1: #10b981; --glow-color-2: #06b6d4; }
+        .theme-sunset { --border-accent: #a855f7; --glow-color-1: #ec4899; --glow-color-2: #8b5cf6; }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body {
             background: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            padding: 24px 16px 50px;
+            padding: 24px 14px 60px;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        .container {
+        .bg-glow-1 {
+            position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+            width: 380px; height: 380px; background: var(--glow-color-1);
+            filter: blur(140px); opacity: 0.28; z-index: 0; pointer-events: none; border-radius: 50%;
+        }
+        .bg-glow-2 {
+            position: absolute; bottom: 50px; right: -50px;
+            width: 320px; height: 320px; background: var(--glow-color-2);
+            filter: blur(130px); opacity: 0.2; z-index: 0; pointer-events: none; border-radius: 50%;
+        }
+
+        .main-container {
             width: 100%;
-            max-width: 440px;
+            max-width: 480px;
+            z-index: 1;
             display: flex;
             flex-direction: column;
             gap: 16px;
         }
 
-        /* Profile Card */
         .profile-card {
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 24px 16px;
-            border-radius: 24px;
             text-align: center;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: var(--card-glass);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 24px 18px 20px;
+            border-radius: 26px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
         }
-        .avatar {
-            width: 95px; height: 95px;
+        .avatar-wrap {
+            position: relative;
+            width: 110px; height: 110px;
+            margin: 0 auto 14px;
+        }
+        .avatar-img {
+            width: 100%; height: 100%;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid var(--accent-color);
-            margin-bottom: 12px;
-            box-shadow: 0 0 15px var(--accent-color);
-            background: #1e293b;
+            border: 3px solid var(--border-accent);
+            box-shadow: 0 0 20px var(--glow-color-1);
         }
-        .title { font-size: 22px; font-weight: 900; margin-bottom: 2px; }
-        .tagline { font-size: 13px; font-weight: 700; color: var(--accent-color); margin-bottom: 8px; }
-        .bio { font-size: 13px; color: var(--text-sub); line-height: 1.4; white-space: pre-line; }
+        .badge-verified {
+            position: absolute; bottom: 4px; right: 4px;
+            background: #0ea5e9; color: #fff;
+            width: 26px; height: 26px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; border: 2px solid #080c14;
+        }
+        .profile-title { font-size: 22px; font-weight: 900; margin-bottom: 2px; }
+        .profile-tag { font-size: 13px; font-weight: 700; color: var(--glow-color-1); margin-bottom: 8px; }
+        .profile-bio { font-size: 13.5px; color: var(--text-sub); line-height: 1.5; white-space: pre-line; }
 
-        /* Links Card */
-        .link-card {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 14px 18px;
-            border-radius: 16px;
-            color: #fff;
-            text-decoration: none;
-            font-weight: 800;
-            font-size: 14px;
-            transition: 0.2s;
-            backdrop-filter: blur(10px);
+        .link-btn {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--card-glass);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px 18px; border-radius: 16px;
+            color: #fff; text-decoration: none; font-weight: 800; font-size: 14.5px;
+            margin-bottom: 10px; transition: 0.25s transform, 0.25s border;
+            backdrop-filter: blur(14px);
         }
-        .link-card:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-2px);
+        .link-btn:hover {
+            transform: translateY(-3px) scale(1.01);
+            border-color: var(--border-accent);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
         }
-        .link-left { display: flex; align-items: center; gap: 12px; }
-        .link-left i { font-size: 18px; color: var(--accent-color); }
-
+        .link-tag {
+            font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 8px;
+            background: linear-gradient(135deg, var(--glow-color-1), var(--glow-color-2));
+            color: #fff; text-transform: uppercase;
+        }
         .footer {
-            text-align: center;
-            font-size: 11px;
-            color: #64748b;
-            margin-top: 20px;
+            text-align: center; font-size: 11px; color: #64748b; margin-top: 20px;
         }
     </style>
 </head>
 <body class="{{ data.theme|default('theme-red') }}">
-    <div class="container">
-        <!-- Profile Section -->
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+
+    <div class="main-container">
         <div class="profile-card">
-            <img src="{{ data.avatar_url|default('/static/uploads/logo.svg') }}" onerror="this.onerror=null;this.src='/static/uploads/logo.svg';" class="avatar" alt="Profile">
-            <h1 class="title">{{ data.title }}</h1>
-            <div class="tagline">{{ data.tagline }}</div>
-            <p class="bio">{{ data.bio }}</p>
+            <div class="avatar-wrap">
+                <img src="{{ data.avatar_url }}" onerror="this.src='/static/uploads/avatar.jpg'" class="avatar-img" alt="Sahil">
+                <div class="badge-verified"><i class="fa-solid fa-check"></i></div>
+            </div>
+            <h1 class="profile-title">{{ data.title }}</h1>
+            <div class="profile-tag">{{ data.tagline }}</div>
+            <p class="profile-bio">{{ data.bio }}</p>
         </div>
 
-        <!-- Links List -->
         {% for link in data.links %}
-        <a href="/click/{{ loop.index0 }}" target="_blank" class="link-card">
-            <div class="link-left">
-                <i class="{{ link.icon }}"></i>
+        <a href="/click/{{ loop.index0 }}" target="_blank" class="link-btn">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="{{ link.icon }}" style="font-size: 18px; color: var(--glow-color-1);"></i>
                 <span>{{ link.name }}</span>
             </div>
-            <i class="fa-solid fa-chevron-right" style="font-size: 11px; color: #64748b;"></i>
+            {% if link.highlight %}
+            <span class="link-tag">{{ link.highlight }}</span>
+            {% else %}
+            <i class="fa-solid fa-chevron-right" style="font-size: 12px; color: #64748b;"></i>
+            {% endif %}
         </a>
         {% endfor %}
 
