@@ -3,9 +3,8 @@ import json
 import os
 import re
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import urllib.request
+import urllib.error
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -38,8 +37,7 @@ def load_data():
             "admin_pass": "SahilPassword@590",
             "admin_pin": "590590",
             "admin_email": "mdsahilkingboos@gmail.com",
-            "smtp_email": "mdsahilkingboos@gmail.com",
-            "smtp_app_pass": "",
+            "resend_api_key": "",
             "total_views": 0,
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
@@ -126,8 +124,7 @@ def load_data():
         data = json.load(f)
         if "admin_pin" not in data: data["admin_pin"] = "590590"
         if "admin_email" not in data: data["admin_email"] = "mdsahilkingboos@gmail.com"
-        if "smtp_email" not in data: data["smtp_email"] = "mdsahilkingboos@gmail.com"
-        if "smtp_app_pass" not in data: data["smtp_app_pass"] = ""
+        if "resend_api_key" not in data: data["resend_api_key"] = ""
         if "total_views" not in data: data["total_views"] = 0
         if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
         if "custom_themes" not in data: data["custom_themes"] = []
@@ -138,43 +135,41 @@ def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-def send_otp_email(to_email, otp_code, data):
-    smtp_user = (data.get("smtp_email") or to_email).strip()
-    smtp_pass = data.get("smtp_app_pass", "").replace(" ", "").strip()
+def send_secure_email_api(to_email, otp_code, data):
+    api_key = data.get("resend_api_key", "").strip()
+    if not api_key:
+        return False, "⚠️ Resend Email API Key सेट नहीं है! नीचे API Key भरें या अपना सीक्रेट Master PIN उपयोग करें।"
     
-    # Try Port 465 SSL first, then 587
-    sent_via_email = False
-    if smtp_pass:
-        try:
-            msg = MIMEMultipart()
-            msg['From'] = f"Sahil Bio Security <{smtp_user}>"
-            msg['To'] = to_email
-            msg['Subject'] = f"🔐 Your Security OTP: {otp_code}"
-            
-            body = f"नमस्ते साहिल!\n\nSahil.com 590 एडमिन सुरक्षा OTP कोड:\n\n👉 {otp_code}\n\nयह कोड 10 मिनट के लिए वैध है।"
-            msg.attach(MIMEText(body, 'plain'))
-            
-            try:
-                server = smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=6)
-                server.login(smtp_user, smtp_pass)
-                server.sendmail(smtp_user, to_email, msg.as_string())
-                server.quit()
-                sent_via_email = True
-            except Exception:
-                server = smtplib.SMTP('smtp.gmail.com', 587, timeout=6)
-                server.starttls()
-                server.login(smtp_user, smtp_pass)
-                server.sendmail(smtp_user, to_email, msg.as_string())
-                server.quit()
-                sent_via_email = True
-        except Exception:
-            sent_via_email = False
-
-    if sent_via_email:
-        return True, f"✅ OTP आपके ईमेल {to_email} पर भेज दिया गया है!"
-    else:
-        # Emergency backup directly on screen so user never gets stuck!
-        return True, f"🔑 Render फ्री सर्वर पर ईमेल पोर्ट बंद है। आपका सिक्योरिटी OTP कोड है: {otp_code}"
+    url = "https://api.resend.com/emails"
+    payload = {
+        "from": "Sahil Security <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": f"🔐 Security OTP Code: {otp_code}",
+        "html": f"""
+        <div style="font-family: Arial, sans-serif; padding: 20px; background: #0f172a; color: #ffffff; border-radius: 12px;">
+            <h2 style="color: #818cf8;">Sahil.com 590 Master Security</h2>
+            <p style="font-size: 14px; color: #cbd5e1;">आपके एडमिन पैनल में पासवर्ड/यूज़रनेम बदलाव के लिए 6-अंकों का OTP अनुरोध किया गया है:</p>
+            <div style="font-size: 32px; font-weight: 900; letter-spacing: 5px; color: #38bdf8; padding: 15px; background: #1e293b; border-radius: 8px; text-align: center; margin: 15px 0;">
+                {otp_code}
+            </div>
+            <p style="font-size: 12px; color: #94a3b8;">यह कोड 10 मिनट के लिए वैध है। अगर आपने यह अनुरोध नहीं किया है, तो इसे किसी को न बताएं।</p>
+        </div>
+        """
+    }
+    
+    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), method='POST')
+    req.add_header('Authorization', f'Bearer {api_key}')
+    req.add_header('Content-Type', 'application/json')
+    req.add_header('User-Agent', 'SahilBioServer/1.0')
+    
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status in (200, 201):
+                return True, f"✅ 6-Digit OTP सफलतापूर्वक आपके ईमेल {to_email} पर भेज दिया गया है!"
+            else:
+                return False, "⚠️ ईमेल भेजने में समस्या हुई। कृपया API Key चेक करें।"
+    except Exception as e:
+        return False, f"⚠️ Email API Error: {str(e)}"
 
 @app.route("/")
 def home():
@@ -240,8 +235,9 @@ def send_otp_ajax():
     data = load_data()
     otp = str(random.randint(100000, 999999))
     session["admin_security_otp"] = otp
-    success, msg = send_otp_email(data.get("admin_email", "mdsahilkingboos@gmail.com"), otp, data)
-    return jsonify({"success": success, "msg": msg, "otp": otp})
+    success, msg = send_secure_email_api(data.get("admin_email", "mdsahilkingboos@gmail.com"), otp, data)
+    # NEVER RETURN OTP IN JSON RESPONSE
+    return jsonify({"success": success, "msg": msg})
 
 @app.route("/admin/download_backup")
 def download_backup():
@@ -279,17 +275,16 @@ def admin_dashboard():
                 if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
                 session.pop("admin_security_otp", None)
                 save_data(data)
-                method_used = "Security OTP" if is_otp_valid else "Master PIN"
-                msg_status = f"✅ {method_used} सत्यापन सफल! यूजरनेम और पासवर्ड अपडेट हो गए!"
+                method_used = "ईमेल OTP" if is_otp_valid else "Master PIN"
+                msg_status = f"✅ {method_used} सत्यापन सफल! यूजरनेम, पासवर्ड और PIN अपडेट हो गए!"
             else:
-                msg_status = "❌ गलत OTP कोड या गलत Master PIN! कृपया सही कोड डालें।"
+                msg_status = "❌ गलत ईमेल OTP कोड या गलत Master PIN! बदलाव अस्वीकार कर दिया गया।"
 
-        elif action == "update_smtp_settings":
+        elif action == "update_api_settings":
             data["admin_email"] = request.form.get("admin_email", "mdsahilkingboos@gmail.com").strip()
-            data["smtp_email"] = request.form.get("smtp_email", "").strip()
-            data["smtp_app_pass"] = request.form.get("smtp_app_pass", "").replace(" ", "").strip()
+            data["resend_api_key"] = request.form.get("resend_api_key", "").strip()
             save_data(data)
-            msg_status = "✅ ईमेल सेटिंग्स सुरक्षित हो गईं!"
+            msg_status = "✅ ईमेल API सेटिंग्स सुरक्षित हो गईं!"
 
         elif action == "restore_backup":
             if 'backup_file' in request.files:
