@@ -164,7 +164,7 @@
                 </form>
             </div>
 
-            <!-- 📈 ADVANCED TRAFFIC & CLICK ANALYTICS (TODAY / 2 DAYS / 7 DAYS / LIFETIME) -->
+            <!-- 📈 ADVANCED TRAFFIC & CLICK ANALYTICS -->
             <h3 style="color: #38bdf8;"><i class="fa-solid fa-chart-line"></i> 📈 Live Traffic & Click Analytics</h3>
             
             <div class="time-tabs">
@@ -178,7 +178,7 @@
                 <div class="stat-card">
                     <div class="stat-label" id="views-label">Today's Visits</div>
                     <div class="stat-number" id="views-value">👁️ {{ views_stats.today|default(0) }}</div>
-                    <div style="font-size: 10px; color: #64748b;" id="views-sub">Real-time Visitors</div>
+                    <div style="font-size: 10px; color: #64748b;" id="views-sub">Real-time Today</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label" id="clicks-label">Today's Link Clicks</div>
@@ -789,32 +789,32 @@
     </div>
 
     <script>
-        // Real-time dynamic stats data from backend
+        {% if logged_in %}
         const statsData = {
             today: {
-                views: "{{ views_stats.today|default(0) }}",
-                clicks: "{{ clicks_stats.today|default(0) }}",
+                views: "{{ views_stats.today if views_stats else 0 }}",
+                clicks: "{{ clicks_stats.today if clicks_stats else 0 }}",
                 vLabel: "Today's Visits",
                 cLabel: "Today's Link Clicks",
                 sub: "Real-time Today"
             },
             two_days: {
-                views: "{{ views_stats.two_days|default(0) }}",
-                clicks: "{{ clicks_stats.two_days|default(0) }}",
+                views: "{{ views_stats.two_days if views_stats else 0 }}",
+                clicks: "{{ clicks_stats.two_days if clicks_stats else 0 }}",
                 vLabel: "Last 2 Days Visits",
                 cLabel: "Last 2 Days Clicks",
                 sub: "Past 48 Hours"
             },
             seven_days: {
-                views: "{{ views_stats.seven_days|default(0) }}",
-                clicks: "{{ clicks_stats.seven_days|default(0) }}",
+                views: "{{ views_stats.seven_days if views_stats else 0 }}",
+                clicks: "{{ clicks_stats.seven_days if clicks_stats else 0 }}",
                 vLabel: "Last 7 Days Visits",
                 cLabel: "Last 7 Days Clicks",
                 sub: "Past 7 Days"
             },
             lifetime: {
-                views: "{{ views_stats.lifetime|default(0) }}",
-                clicks: "{{ clicks_stats.lifetime|default(0) }}",
+                views: "{{ views_stats.lifetime if views_stats else 0 }}",
+                clicks: "{{ clicks_stats.lifetime if clicks_stats else 0 }}",
                 vLabel: "Lifetime Bio Visits",
                 cLabel: "Lifetime Link Clicks",
                 sub: "All Time Total"
@@ -826,13 +826,15 @@
             btn.classList.add('active');
 
             const item = statsData[timeframe];
-            document.getElementById('views-label').innerText = item.vLabel;
-            document.getElementById('views-value').innerText = "👁️ " + item.views;
-            document.getElementById('views-sub').innerText = item.sub;
+            if (item) {
+                document.getElementById('views-label').innerText = item.vLabel;
+                document.getElementById('views-value').innerText = "👁️ " + item.views;
+                document.getElementById('views-sub').innerText = item.sub;
 
-            document.getElementById('clicks-label').innerText = item.cLabel;
-            document.getElementById('clicks-value').innerText = "⚡ " + item.clicks;
-            document.getElementById('clicks-sub').innerText = item.sub;
+                document.getElementById('clicks-label').innerText = item.cLabel;
+                document.getElementById('clicks-value').innerText = "⚡ " + item.clicks;
+                document.getElementById('clicks-sub').innerText = item.sub;
+            }
         }
 
         function toggleEdit(id) {
@@ -871,6 +873,7 @@
                 btn.disabled = false;
             });
         }
+        {% endif %}
 
         function sendTgOtpLogin() {
             const btn = document.getElementById('login-tg-btn');

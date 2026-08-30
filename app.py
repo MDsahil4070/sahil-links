@@ -128,8 +128,8 @@ def load_data():
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
         if "admin_pin" not in data: data["admin_pin"] = "590590"
-        if "views_history" not in data: data["views_history"] = []
-        if "clicks_history" not in data: data["clicks_history"] = []
+        if "views_history" not in data or not isinstance(data["views_history"], list): data["views_history"] = []
+        if "clicks_history" not in data or not isinstance(data["clicks_history"], list): data["clicks_history"] = []
         if "total_views" not in data: data["total_views"] = len(data.get("views_history", []))
         if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
         if "custom_themes" not in data: data["custom_themes"] = []
@@ -149,21 +149,20 @@ def calculate_stats(history_list):
     today_count = 0
     two_days_count = 0
     seven_days_count = 0
-    lifetime_count = len(history_list)
+    lifetime_count = len(history_list) if isinstance(history_list, list) else 0
     
-    for item in history_list:
-        try:
-            item_date = datetime.strptime(item.split("T")[0], "%Y-%m-%d")
-            item_full = datetime.strptime(item, "%Y-%m-%dT%H:%M:%S")
-            
-            if item.startswith(today_str):
-                today_count += 1
-            if item_full >= two_days_ago:
-                two_days_count += 1
-            if item_full >= seven_days_ago:
-                seven_days_count += 1
-        except Exception:
-            pass
+    if isinstance(history_list, list):
+        for item in history_list:
+            try:
+                item_full = datetime.strptime(str(item), "%Y-%m-%dT%H:%M:%S")
+                if str(item).startswith(today_str):
+                    today_count += 1
+                if item_full >= two_days_ago:
+                    two_days_count += 1
+                if item_full >= seven_days_ago:
+                    seven_days_count += 1
+            except Exception:
+                pass
             
     return {
         "today": today_count,
@@ -271,6 +270,7 @@ def send_message():
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
     data = load_data()
+    empty_stats = {"today": 0, "two_days": 0, "seven_days": 0, "lifetime": 0}
     if session.get("logged_in"): return redirect(url_for("admin_dashboard"))
     if request.method == "POST":
         user = request.form.get("username")
@@ -281,8 +281,8 @@ def admin():
             session["logged_in"] = True
             return redirect(url_for("admin_dashboard"))
         else:
-            return render_template("admin.html", logged_in=False, data=data, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
-    return render_template("admin.html", logged_in=False, data=data)
+            return render_template("admin.html", logged_in=False, data=data, views_stats=empty_stats, clicks_stats=empty_stats, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
+    return render_template("admin.html", logged_in=False, data=data, views_stats=empty_stats, clicks_stats=empty_stats)
 
 @app.route("/admin/send_tg_otp", methods=["POST"])
 def send_tg_otp():
@@ -298,6 +298,7 @@ def send_tg_otp():
 @app.route("/admin/reset_password_otp", methods=["POST"])
 def reset_password_otp():
     data = load_data()
+    empty_stats = {"today": 0, "two_days": 0, "seven_days": 0, "lifetime": 0}
     entered_otp = request.form.get("reset_otp", "").strip()
     new_user = request.form.get("reset_user", "").strip()
     new_pass = request.form.get("reset_pass", "").strip()
@@ -314,7 +315,7 @@ def reset_password_otp():
         session["logged_in"] = True
         return redirect(url_for("admin_dashboard"))
     else:
-        return render_template("admin.html", logged_in=False, data=data, error="❌ गलत Telegram OTP कोड! रीसेट विफल हुआ।")
+        return render_template("admin.html", logged_in=False, data=data, views_stats=empty_stats, clicks_stats=empty_stats, error="❌ गलत Telegram OTP कोड! रीसेट विफल हुआ।")
 
 @app.route("/admin/download_backup")
 def download_backup():
@@ -331,7 +332,6 @@ def admin_dashboard():
     views_stats = calculate_stats(data.get("views_history", []))
     clicks_stats = calculate_stats(data.get("clicks_history", []))
     
-    # Fallback to sum of link clicks if history is newly initialized
     if clicks_stats["lifetime"] == 0:
         total_l_clicks = sum(l.get("clicks", 0) for l in data.get("links", []))
         clicks_stats["lifetime"] = total_l_clicks
