@@ -1,7 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, send_file, jsonify
 import json
 import os
 import re
+import random
+import urllib.request
+import urllib.parse
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -32,6 +35,11 @@ def load_data():
         default_data = {
             "admin_user": "admin",
             "admin_pass": "SahilPassword@590",
+            "admin_pin": "590590",
+            "tg_bot_token": "",
+            "tg_chat_id": "",
+            "tg_bot_token_2": "",
+            "tg_chat_id_2": "",
             "total_views": 0,
             "title": "Sahil.com 590",
             "tagline": "@sahil.com590_",
@@ -116,9 +124,12 @@ def load_data():
         return default_data
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
+        if "admin_pin" not in data: data["admin_pin"] = "590590"
+        if "tg_bot_token" not in data: data["tg_bot_token"] = ""
+        if "tg_chat_id" not in data: data["tg_chat_id"] = ""
+        if "tg_bot_token_2" not in data: data["tg_bot_token_2"] = ""
+        if "tg_chat_id_2" not in data: data["tg_chat_id_2"] = ""
         if "total_views" not in data: data["total_views"] = 0
-        if "admin_user" not in data: data["admin_user"] = "admin"
-        if "admin_pass" not in data: data["admin_pass"] = "SahilPassword@590"
         if "animation_style" not in data: data["animation_style"] = "anim-slide-up"
         if "custom_themes" not in data: data["custom_themes"] = []
         if "custom_css" not in data: data["custom_css"] = ""
@@ -127,6 +138,52 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
+
+def send_single_tg_message(token, chat_id, otp_code, bot_name="Telegram Bot"):
+    if not token or not chat_id:
+        return False, f"⚠️ {bot_name} Token या Chat ID सेट नहीं है!"
+    
+    msg_text = f"🛡️ *Sahil.com 590 Security Alert*\n\n🔑 Your Security OTP: `{otp_code}`\n\n⏱️ यह कोड 10 मिनट के लिए मान्य है。\n🤖 Delivered via: {bot_name}"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = urllib.parse.urlencode({
+        "chat_id": chat_id,
+        "text": msg_text,
+        "parse_mode": "Markdown"
+    }).encode('utf-8')
+    
+    try:
+        req = urllib.request.Request(url, data=payload)
+        with urllib.request.urlopen(req, timeout=8) as response:
+            res = json.loads(response.read().decode('utf-8'))
+            if res.get("ok"):
+                return True, f"⚡ OTP {bot_name} पर सफलतापूर्वक भेज दिया गया है!"
+            else:
+                return False, f"⚠️ {bot_name} Error: {res.get('description')}"
+    except Exception as e:
+        return False, f"⚠️ {bot_name} Network Error: {str(e)}"
+
+def send_telegram_otp(otp_code, data, bot_choice="auto"):
+    token1 = data.get("tg_bot_token", "").strip()
+    chat1 = data.get("tg_chat_id", "").strip()
+    token2 = data.get("tg_bot_token_2", "").strip()
+    chat2 = data.get("tg_chat_id_2", "").strip()
+    
+    if bot_choice == "bot1":
+        return send_single_tg_message(token1, chat1, otp_code, "Primary Bot 1")
+    elif bot_choice == "bot2":
+        return send_single_tg_message(token2, chat2, otp_code, "Backup Bot 2")
+    else:
+        success1, msg1 = send_single_tg_message(token1, chat1, otp_code, "Primary Bot 1")
+        success2, msg2 = send_single_tg_message(token2, chat2, otp_code, "Backup Bot 2")
+        
+        if success1 and success2:
+            return True, "⚡ OTP दोनों Telegram बॉट्स (Bot 1 & Bot 2) पर भेज दिया गया है!"
+        elif success1:
+            return True, "⚡ OTP Telegram Primary Bot 1 पर भेज दिया गया है!"
+        elif success2:
+            return True, "⚡ OTP Telegram Backup Bot 2 पर भेज दिया गया है!"
+        else:
+            return False, f"⚠️ {msg1} | {msg2}"
 
 @app.route("/")
 def home():
@@ -177,12 +234,46 @@ def admin():
     if request.method == "POST":
         user = request.form.get("username")
         pwd = request.form.get("password")
-        if user == data.get("admin_user", "admin") and pwd == data.get("admin_pass", "SahilPassword@590"):
+        pin = request.form.get("emergency_pin")
+        
+        if (user == data.get("admin_user", "admin") and pwd == data.get("admin_pass", "SahilPassword@590")) or (pin and pin == data.get("admin_pin", "590590")):
             session["logged_in"] = True
             return redirect(url_for("admin_dashboard"))
         else:
-            return render_template("admin.html", logged_in=False, data=data, error="गलत यूज़रनेम या पासवर्ड!")
+            return render_template("admin.html", logged_in=False, data=data, error="गलत क्रेडेंशियल्स या गलत 6-Digit PIN!")
     return render_template("admin.html", logged_in=False, data=data)
+
+@app.route("/admin/send_tg_otp", methods=["POST"])
+def send_tg_otp():
+    data = load_data()
+    req_json = request.get_json(silent=True) or {}
+    bot_choice = req_json.get("bot_choice", "auto")
+    
+    otp = str(random.randint(100000, 999999))
+    session["admin_security_otp"] = otp
+    success, msg = send_telegram_otp(otp, data, bot_choice)
+    return jsonify({"success": success, "msg": msg})
+
+@app.route("/admin/reset_password_otp", methods=["POST"])
+def reset_password_otp():
+    data = load_data()
+    entered_otp = request.form.get("reset_otp", "").strip()
+    new_user = request.form.get("reset_user", "").strip()
+    new_pass = request.form.get("reset_pass", "").strip()
+    new_pin = request.form.get("reset_pin", "").strip()
+    
+    saved_otp = session.get("admin_security_otp")
+    
+    if saved_otp and entered_otp == saved_otp:
+        if new_user: data["admin_user"] = new_user
+        if new_pass: data["admin_pass"] = new_pass
+        if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
+        session.pop("admin_security_otp", None)
+        save_data(data)
+        session["logged_in"] = True
+        return redirect(url_for("admin_dashboard"))
+    else:
+        return render_template("admin.html", logged_in=False, data=data, error="❌ गलत Telegram OTP कोड! रीसेट विफल हुआ।")
 
 @app.route("/admin/download_backup")
 def download_backup():
@@ -200,8 +291,113 @@ def admin_dashboard():
     
     if request.method == "POST":
         action = request.form.get("action")
-        
-        if action == "restore_backup":
+
+        # ✏️ EDIT HANDLERS
+        if action == "edit_link":
+            idx = int(request.form.get("index"))
+            if 0 <= idx < len(data["links"]):
+                name = request.form.get("name")
+                url = request.form.get("url")
+                ltype = request.form.get("type", "other")
+                highlight = request.form.get("highlight", "").strip()
+                icon = "fa-solid fa-link"
+                if "youtube" in ltype: icon = "fa-brands fa-youtube"
+                elif "facebook" in ltype: icon = "fa-brands fa-facebook-f"
+                elif "telegram" in ltype: icon = "fa-brands fa-telegram"
+                elif "instagram" in ltype: icon = "fa-brands fa-instagram"
+                elif "moj" in ltype: icon = "fa-solid fa-video"
+                data["links"][idx] = {
+                    "name": name, "url": url, "type": ltype,
+                    "icon": icon, "clicks": data["links"][idx].get("clicks", 0),
+                    "highlight": highlight
+                }
+                save_data(data)
+                msg_status = f"✅ लिंक '{name}' सफलतापूर्वक अपडेट हो गया!"
+
+        elif action == "edit_gear":
+            idx = int(request.form.get("index"))
+            if "gears" in data and 0 <= idx < len(data["gears"]):
+                data["gears"][idx] = {
+                    "name": request.form.get("gear_name"),
+                    "tag": request.form.get("gear_tag"),
+                    "url": request.form.get("gear_url"),
+                    "icon": request.form.get("gear_icon", "fa-solid fa-bag-shopping")
+                }
+                save_data(data)
+                msg_status = "✅ Gear आइटम अपडेट हो गया!"
+
+        elif action == "edit_milestone":
+            idx = int(request.form.get("index"))
+            if "milestones" in data and 0 <= idx < len(data["milestones"]):
+                data["milestones"][idx] = {
+                    "title": request.form.get("m_title"),
+                    "desc": request.form.get("m_desc"),
+                    "icon": request.form.get("m_icon", "fa-solid fa-award")
+                }
+                save_data(data)
+                msg_status = "✅ माइलस्टोन अपडेट हो गया!"
+
+        elif action == "edit_faq":
+            idx = int(request.form.get("index"))
+            if "faqs" in data and 0 <= idx < len(data["faqs"]):
+                data["faqs"][idx] = {
+                    "q": request.form.get("faq_q"),
+                    "a": request.form.get("faq_a")
+                }
+                save_data(data)
+                msg_status = "✅ FAQ अपडेट हो गया!"
+
+        elif action == "edit_review":
+            idx = int(request.form.get("index"))
+            if "reviews" in data and 0 <= idx < len(data["reviews"]):
+                data["reviews"][idx] = {
+                    "name": request.form.get("rev_name"),
+                    "rating": request.form.get("rev_star", "⭐⭐⭐⭐⭐"),
+                    "text": request.form.get("rev_text")
+                }
+                save_data(data)
+                msg_status = "✅ रिव्यू अपडेट हो गया!"
+
+        elif action == "edit_gallery_photo":
+            idx = int(request.form.get("index"))
+            if "gallery" in data and 0 <= idx < len(data["gallery"]):
+                g_title = request.form.get("g_title")
+                photo_url = request.form.get("photo_url", "").strip() or data["gallery"][idx]["url"]
+                if 'photo_file' in request.files:
+                    file = request.files['photo_file']
+                    if file and file.filename != '':
+                        fname = secure_filename(file.filename)
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                        photo_url = f"/static/uploads/{fname}"
+                data["gallery"][idx] = {"title": g_title, "url": photo_url}
+                save_data(data)
+                msg_status = "✅ गैलरी फोटो अपडेट हो गई!"
+
+        elif action == "update_security_credentials":
+            new_u = request.form.get("new_username", "").strip()
+            new_p = request.form.get("new_password", "").strip()
+            new_pin = request.form.get("new_pin", "").strip()
+            entered_otp = request.form.get("otp_code", "").strip()
+            entered_pin = request.form.get("current_pin", "").strip()
+            
+            saved_otp = session.get("admin_security_otp")
+            master_pin = data.get("admin_pin", "590590")
+            
+            is_otp_valid = bool(saved_otp and entered_otp and entered_otp == saved_otp)
+            is_pin_valid = bool(entered_pin and entered_pin == master_pin)
+            
+            if is_otp_valid or is_pin_valid:
+                if new_u: data["admin_user"] = new_u
+                if new_p: data["admin_pass"] = new_p
+                if new_pin and len(new_pin) == 6: data["admin_pin"] = new_pin
+                session.pop("admin_security_otp", None)
+                save_data(data)
+                method_used = "Telegram OTP" if is_otp_valid else "Master PIN"
+                msg_status = f"✅ {method_used} सत्यापन सफल! यूजरनेम, पासवर्ड और PIN अपडेट हो गए!"
+            else:
+                msg_status = "❌ गलत Telegram OTP कोड या गलत Master PIN!"
+
+        elif action == "restore_backup":
             if 'backup_file' in request.files:
                 file = request.files['backup_file']
                 if file and file.filename.endswith('.json'):
@@ -220,15 +416,6 @@ def admin_dashboard():
             save_data(data)
             msg_status = "✅ एनालिटिक्स डेटा रीसेट हो गया!"
 
-        elif action == "change_credentials":
-            new_u = request.form.get("new_username", "").strip()
-            new_p = request.form.get("new_password", "").strip()
-            if new_u and new_p:
-                data["admin_user"] = new_u
-                data["admin_pass"] = new_p
-                save_data(data)
-                msg_status = "✅ एडमिन यूजरनेम और पासवर्ड बदल दिया गया!"
-
         elif action == "create_custom_theme":
             t_name = request.form.get("theme_name", "").strip()
             t_bg = request.form.get("theme_bg", "#000000")
@@ -241,17 +428,12 @@ def admin_dashboard():
                 slug = "theme-custom-" + re.sub(r'[^a-zA-Z0-9]', '', t_name).lower()
                 if "custom_themes" not in data: data["custom_themes"] = []
                 data["custom_themes"].append({
-                    "id": slug,
-                    "name": "🎨 " + t_name,
-                    "bg": t_bg,
-                    "glow1": t_glow1,
-                    "glow2": t_glow2,
-                    "card": t_card,
-                    "border": t_border
+                    "id": slug, "name": "🎨 " + t_name, "bg": t_bg,
+                    "glow1": t_glow1, "glow2": t_glow2, "card": t_card, "border": t_border
                 })
                 data["theme"] = slug
                 save_data(data)
-                msg_status = f"✅ कस्टम थीम '{t_name}' बन गई और लागू हो गई!"
+                msg_status = f"✅ कस्टम थीम '{t_name}' बन गई!"
 
         elif action == "upload_css_file":
             if 'css_file' in request.files:
@@ -260,15 +442,14 @@ def admin_dashboard():
                     content = f.read().decode('utf-8', errors='ignore')
                     data["custom_css"] = content
                     save_data(data)
-                    msg_status = "✅ कस्टम CSS फाइल सफलतापूर्वक अपलोड हो गई!"
+                    msg_status = "✅ कस्टम CSS फाइल अपलोड हो गई!"
 
         elif action == "delete_custom_theme":
             idx = int(request.form.get("index"))
             if "custom_themes" in data and 0 <= idx < len(data["custom_themes"]):
                 del_id = data["custom_themes"][idx]["id"]
                 data["custom_themes"].pop(idx)
-                if data.get("theme") == del_id:
-                    data["theme"] = "theme-red"
+                if data.get("theme") == del_id: data["theme"] = "theme-red"
                 save_data(data)
                 msg_status = "✅ कस्टम थीम हटा दी गई!"
 
